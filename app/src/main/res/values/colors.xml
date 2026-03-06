@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Couleurs de base -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Palette GeoEvent -->
+    <color name="geo_blue_dark">#0D2B5E</color>
+    <color name="geo_blue_primary">#1A4A8A</color>
+    <color name="geo_blue_light">#2563B0</color>
+    <color name="geo_orange_primary">#F5780A</color>
+    <color name="geo_orange_dark">#D4610A</color>
+    <color name="geo_orange_light">#FF9A3C</color>
+
+    <!-- Surfaces & fonds -->
+    <color name="geo_background">#F4F7FC</color>
+    <color name="geo_surface">#FFFFFF</color>
+    <color name="geo_surface_variant">#EBF0F9</color>
+
+    <!-- Textes -->
+    <color name="geo_text_primary">#0D2B5E</color>
+    <color name="geo_text_secondary">#5B7A9D</color>
+    <color name="geo_text_hint">#9BB3CC</color>
+
+    <!-- Bordures & séparateurs -->
+    <color name="geo_border">#D0DDF0</color>
+    <color name="geo_divider">#E8EEF8</color>
+
+    <!-- États -->
+    <color name="geo_error">#E53935</color>
+    <color name="geo_success">#43A047</color>
+
+    <!-- Overlay carte -->
+    <color name="geo_blue_overlay">#CC0D2B5E</color>
 </resources>
