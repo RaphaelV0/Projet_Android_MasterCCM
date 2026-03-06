@@ -1,20 +1,35 @@
 package fr.upjv.geoevent.domain.repository;
 
-import java.util.List;
-
-import fr.upjv.geoevent.domain.data.firebase.IfirebaseDataService;
+import fr.upjv.geoevent.domain.data.DataCallback;
+import fr.upjv.geoevent.domain.data.DataServiceFactory;
+import fr.upjv.geoevent.domain.data.IDataService;
 import fr.upjv.geoevent.domain.models.Evenement;
 
-public class EvenementRepository implements IfirebaseDataService {
 
+public class EvenementRepository {
 
-    public List<Evenement> getList(){
+    private static final String COLLECTION = "events";
 
-        return null;
+    private IDataService dataService;
+
+    public EvenementRepository() {
+        this.dataService = DataServiceFactory.create();
     }
 
+    public void getEvents(DataCallback callback) {
+        dataService.getAll(COLLECTION, callback);
+    }
 
+    public void createEvent(Evenement event) {
+        dataService.create(COLLECTION, event);
+    }
 
+    public void updateEvent(String id, Evenement event) {
+        dataService.update(COLLECTION, id, event);
+    }
 
+    public void deleteEvent(String id) {
+        dataService.delete(COLLECTION, id);
+    }
 
 }
