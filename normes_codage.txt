@@ -1,0 +1,6 @@
+Dans Data : gestion de l'implémentation des base de données (firebase et supabase sous forme d'interfaces)
+Dans Models : les models des tables uniquement
+Dans Repository : les class qui vont venir faire les requêtes sur les models uniquement
+Dans Service : la logique métier
+Dans /ui/activities : les layouts
+Dans /ui/viewmodels : la passerelle entre la base de données et les layouts
