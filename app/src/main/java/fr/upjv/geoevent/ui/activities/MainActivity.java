@@ -1,0 +1,65 @@
+package fr.upjv.geoevent.ui.activities;
+
+import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import fr.upjv.geoevent.R;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // 1. Récupérer les vues
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+
+        // On dit à Android que notre Toolbar sert de barre d'action principale
+        setSupportActionBar(topAppBar);
+
+        // 2. Récupérer le NavController (Le chef d'orchestre des fragments)
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+        NavController navController = navHostFragment.getNavController();
+
+        // 3. Configurer la barre du bas pour qu'elle change les fragments
+        NavigationUI.setupWithNavController(bottomNav, navController);
+
+        // 4. Configurer la barre du haut (pour afficher la flèche retour quand il faut)
+        // On définit les "écrans racines" (ceux qui n'ont pas de flèche retour)
+        AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_map, R.id.navigation_list, R.id.navigation_profile)
+                .build();
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+
+        // 5. CACHER la barre du bas sur les écrans de détails ou d'ajout (comme sur ta maquette)
+//        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+//            if (destination.getId() == R.id.navigation_event_details ||
+//                    destination.getId() == R.id.navigation_add_event) {
+//                // Si on est sur les détails ou l'ajout, on cache la barre du bas
+//                bottomNav.setVisibility(View.GONE);
+//            } else {
+//                // Sinon, on l'affiche (sur la Map par exemple)
+//                bottomNav.setVisibility(View.VISIBLE);
+//            }
+//        });
+    }
+
+    // Permet à la flèche retour en haut à gauche de fonctionner
+    @Override
+    public boolean onSupportNavigateUp() {
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+        NavController navController = navHostFragment.getNavController();
+        return navController.navigateUp() || super.onSupportNavigateUp();
+    }
+}
