@@ -33,3 +33,6 @@ Pour aérer l'application et garantir la lisibilité.
 * **Sous-titres** : Pour hiérarchiser l'information de manière claire.
 
 > 💡 **Note UI/UX** : Pour éviter la fatigue visuelle sur les écrans, le noir pur (`#000000`) est réservé au logo. Le texte courant de l'application utilise un gris très foncé (comme `#212121` ou `#333333`).
+
+Exemple du design :
+<img width="2816" height="1536" alt="Gemini_Generated_Image_efcfepefcfepefcf" src="https://github.com/user-attachments/assets/4089f75b-9097-4043-b8b0-f9b3539eb72e" />
