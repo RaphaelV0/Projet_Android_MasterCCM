@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond du conteneur des onglets Connexion / Inscription -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#EBF0F9" />
+    <corners android:radius="12dp" />
+</shape>
