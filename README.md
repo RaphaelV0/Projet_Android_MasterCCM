@@ -1,3 +1,5 @@
+R
+
 ## 🎨 Design System & Palette de Couleurs
 
 Pour garantir la cohérence visuelle et une bonne expérience utilisateur (UI/UX), le projet utilise la palette de couleurs suivante :
