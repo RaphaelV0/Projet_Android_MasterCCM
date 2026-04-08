@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.activities.EventRegister">
+
+    <Button
+        android:id="@+id/RegisterEvent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="171dp"
+        android:onClick="OnClickInscriptionEvent"
+        android:text="S'inscrire à l'événement"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/DescriptionEvent" />
+
+    <TextView
+        android:id="@+id/TitreEvent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="153dp"
+        android:layout_marginBottom="87dp"
+        android:text="Titre événement"
+        app:layout_constraintBottom_toTopOf="@+id/DateEvent"
+        app:layout_constraintStart_toStartOf="@+id/DateEvent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/DateEvent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="17dp"
+        android:text="Date événement"
+        app:layout_constraintBottom_toTopOf="@+id/LieuEvent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/TitreEvent" />
+
+    <TextView
+        android:id="@+id/LieuEvent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Lieu événement"
+        app:layout_constraintBottom_toTopOf="@+id/DescriptionEvent"
+        app:layout_constraintStart_toStartOf="@+id/DateEvent"
+        app:layout_constraintTop_toBottomOf="@+id/DateEvent" />
+
+    <TextView
+        android:id="@+id/DescriptionEvent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="44dp"
+        android:layout_marginEnd="44dp"
+        android:layout_marginBottom="35dp"
+        android:text="Description de l'événement"
+        app:layout_constraintBottom_toTopOf="@+id/RegisterEvent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/LieuEvent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
