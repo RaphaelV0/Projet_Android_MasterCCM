@@ -42,6 +42,8 @@ dependencies {
     implementation(libs.navigation.runtime)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
+    implementation(libs.androidx.annotation)
+    implementation("org.osmdroid:osmdroid-android:6.1.16")
     implementation("androidx.navigation:navigation-fragment:2.7.7")
     implementation("androidx.navigation:navigation-ui:2.7.7")
     implementation(libs.firebase.firestore)
