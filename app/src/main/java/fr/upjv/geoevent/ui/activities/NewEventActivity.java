@@ -30,6 +30,12 @@ public class NewEventActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_event);
 
+        imageEvent = findViewById(R.id.imageEvent);
+        DateEventCreate = findViewById(R.id.DateEventCreate);
+        PostalAdresseCreate = findViewById(R.id.PostalAdresseCreate);
+        TitreEventCreate = findViewById(R.id.TitreEventCreate);
+        DescriptionEventCreate = findViewById(R.id.DescriptionEventCreate);
+        CreateEvent = findViewById(R.id.CreateEvent);
     }
 
     public void OnClicKPublish(View view) {
