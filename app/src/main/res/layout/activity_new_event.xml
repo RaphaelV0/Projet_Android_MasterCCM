@@ -11,7 +11,7 @@
         android:id="@+id/CreateEvent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="144dp"
+        android:layout_marginBottom="56dp"
         android:onClick="OnClicKPublish"
         android:text="Publier l'événement"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -19,17 +19,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/DescriptionEventCreate" />
 
-    <EditText
+    <TextView
         android:id="@+id/PostalAdresseCreate"
         android:layout_width="219dp"
         android:layout_height="0dp"
-        android:layout_marginStart="11dp"
-        android:layout_marginBottom="61dp"
+        android:layout_marginBottom="36dp"
         android:ems="10"
-        android:inputType="textPostalAddress"
-        android:text="Lieu de l'événement"
+        android:text="Choisir lieu de l'événement"
         app:layout_constraintBottom_toTopOf="@+id/DescriptionEventCreate"
-        app:layout_constraintStart_toStartOf="@+id/DescriptionEventCreate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/DateEventCreate" />
 
     <EditText
@@ -37,37 +36,53 @@
         android:layout_width="219dp"
         android:layout_height="0dp"
         android:layout_marginTop="85dp"
-        android:layout_marginBottom="63dp"
+        android:layout_marginBottom="43dp"
         android:ems="10"
         android:inputType="text"
         android:text="Titre de l'événement"
-        app:layout_constraintBottom_toTopOf="@+id/DateEventCreate"
+        app:layout_constraintBottom_toTopOf="@+id/imageEvent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
+    <EditText
         android:id="@+id/DescriptionEventCreate"
         android:layout_width="219dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="101dp"
+        android:layout_marginBottom="63dp"
+        android:clickable="true"
+        android:focusable="true"
         android:text="Description de l'événement"
         app:layout_constraintBottom_toTopOf="@+id/CreateEvent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/PostalAdresseCreate" />
 
-    <EditText
+    <TextView
         android:id="@+id/DateEventCreate"
-        android:layout_width="0dp"
+        android:layout_width="219dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="75dp"
+        android:layout_marginBottom="56dp"
+        android:clickable="true"
         android:ems="10"
-        android:inputType="date"
-        android:text="Date de l'événement"
+        android:focusable="true"
+        android:text="Choisir la date de l'événement"
         app:layout_constraintBottom_toTopOf="@+id/PostalAdresseCreate"
-        app:layout_constraintEnd_toEndOf="@+id/PostalAdresseCreate"
-        app:layout_constraintStart_toStartOf="@+id/PostalAdresseCreate"
-        app:layout_constraintTop_toBottomOf="@+id/TitreEventCreate" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageEvent" />
+
+    <ImageView
+        android:id="@+id/imageEvent"
+        android:layout_width="143dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="109dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toTopOf="@+id/DateEventCreate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/TitreEventCreate"
+        app:srcCompat="@android:drawable/ic_menu_gallery" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
