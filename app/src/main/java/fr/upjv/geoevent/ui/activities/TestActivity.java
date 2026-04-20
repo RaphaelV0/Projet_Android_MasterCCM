@@ -25,7 +25,7 @@ public class TestActivity extends AppCompatActivity {
 
         // Création d'un nouvel événement
         Evenement event = new Evenement();
-        event.setTitre("Concert à Amiens");
+        event.setTitre("Concert à Saint-Quentin");
         event.setDescription("Concert payant au palais des sports");
         event.setLatitude(49.8566);
         event.setLongitude(7.3522);
