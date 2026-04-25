@@ -121,11 +121,12 @@
                 app:boxCornerRadiusTopStart="12dp"
                 app:startIconDrawable="@android:drawable/ic_dialog_map">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
                     android:id="@+id/PostalAdresseCreate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Lieu ou Adresse" />
+                    android:hint="Lieu ou Adresse"
+                    android:completionThreshold="3" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout

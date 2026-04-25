@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -45,7 +46,9 @@ dependencies {
     implementation("androidx.navigation:navigation-ui:2.7.7")
     implementation(libs.recyclerview)
     implementation(libs.fragment)
+    implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 }
