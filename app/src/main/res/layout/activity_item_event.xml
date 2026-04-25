@@ -1,48 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:orientation="vertical">
 
-        <!-- Image -->
         <ImageView
             android:id="@+id/imageEvent"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="centerCrop" />
+            android:layout_height="160dp"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:background="#EEE" />
 
-        <!-- Titre -->
-        <TextView
-            android:id="@+id/titleEvent"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Titre événement"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:layout_marginTop="8dp" />
+            android:orientation="vertical"
+            android:padding="12dp">
 
-        <!-- Lieu -->
-        <TextView
-            android:id="@+id/locationEvent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lieu"
-            android:layout_marginTop="4dp" />
+            <TextView
+                android:id="@+id/titleEvent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Titre de l'événement"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-        <!-- Date -->
-        <TextView
-            android:id="@+id/dateEvent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Date"
-            android:layout_marginTop="2dp" />
+            <TextView
+                android:id="@+id/locationEvent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:alpha="0.7"
+                android:text="Lieu de l'événement"
+                android:drawableStart="@android:drawable/ic_dialog_map"
+                android:drawablePadding="4dp" />
 
+            <TextView
+                android:id="@+id/dateEvent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:alpha="0.7"
+                android:text="Date de l'événement"
+                android:drawableStart="@android:drawable/ic_menu_my_calendar"
+                android:drawablePadding="4dp" />
+        </LinearLayout>
     </LinearLayout>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
