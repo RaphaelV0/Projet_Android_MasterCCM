@@ -15,39 +15,39 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GeoEvent_android">
-        <activity
-            android:name=".ui.activities.TestActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".ui.activities.NewEventActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activities.MapActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".ui.activities.ConnexionActivity"
-            android:exported="true" />
         <activity
             android:name=".ui.activities.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.activities.TestActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.activities.MapActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.activities.NewEventActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.activities.ConnexionActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.activities.EventList"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.activities.EventRegister"
+            android:exported="false" />
     </application>
 
 </manifest>

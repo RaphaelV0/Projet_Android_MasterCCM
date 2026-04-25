@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "fr.upjv.geoevent"
-        minSdk = 26
-        targetSdk = 34
+        minSdk = 36
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -42,14 +42,13 @@ dependencies {
     implementation(libs.navigation.runtime)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
-    implementation(libs.androidx.annotation)
-    implementation("org.osmdroid:osmdroid-android:6.1.16")
     implementation("androidx.navigation:navigation-fragment:2.7.7")
     implementation("androidx.navigation:navigation-ui:2.7.7")
+    implementation(libs.recyclerview)
+    implementation(libs.fragment)
     implementation(libs.firebase.firestore)
-    implementation(libs.navigation.fragment.ktx)
-    implementation(libs.navigation.ui.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 }
