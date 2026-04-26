@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "548704308856",
-    "project_id": "ccmandroidprojet2026",
-    "storage_bucket": "ccmandroidprojet2026.firebasestorage.app"
+    "project_number": "67867949749",
+    "project_id": "ccmandroidgp2026",
+    "storage_bucket": "ccmandroidgp2026.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:548704308856:android:39006b69f7a6f1b8bce78d",
+        "mobilesdk_app_id": "1:67867949749:android:ce61e960482903df191cfc",
         "android_client_info": {
           "package_name": "fr.upjv.geoevent"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB1mC18LhjFumfifRQ0Pyxm0B_YVSCBfjE"
+          "current_key": "AIzaSyBxem4HMYgq85XPaiPPBmzWkoEocmMAzFc"
         }
       ],
       "services": {
