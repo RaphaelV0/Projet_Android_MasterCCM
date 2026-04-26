@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "fr.upjv.geoevent"
-    compileSdk {
-        version = release(36)
-    }
+    // On repasse à 36 pour satisfaire les dépendances récentes (androidx.activity 1.12.4, etc.)
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "fr.upjv.geoevent"
-        minSdk = 36
-        targetSdk = 36
+        // On garde un minSdk bas pour que ça tourne sur votre émulateur (API 28/31)
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -46,7 +46,12 @@ dependencies {
     implementation("androidx.navigation:navigation-ui:2.7.7")
     implementation(libs.recyclerview)
     implementation(libs.fragment)
+    
+    // Firebase
+    implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

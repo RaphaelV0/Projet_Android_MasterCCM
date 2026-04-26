@@ -12,7 +12,7 @@ public class UserRepository {
 
     private static final String COLLECTION = "users";
 
-    private IDataService dataService;
+    private final IDataService dataService;
 
     public UserRepository() {
         this.dataService = DataServiceFactory.create();
@@ -23,10 +23,14 @@ public class UserRepository {
         dataService.getById(COLLECTION, uid, callback);
     }
 
-    // Crée le document profil dans Firestore juste après l'inscription
-    // Appelé depuis FirebaseAuthServiceImpl après createUserWithEmailAndPassword
+    /**
+     * Crée le document profil dans Firestore juste après l'inscription.
+     * Utilise l'UID de l'utilisateur comme identifiant de document pour faciliter les recherches.
+     */
     public void createUser(User user) {
-        dataService.create(COLLECTION, user);
+        // On utilise update qui fait un .set() dans FirebaseDataService.
+        // Si le document n'existe pas, il est créé avec l'ID spécifié (user.getUid()).
+        dataService.update(COLLECTION, user.getUid(), user);
     }
 
     // Met à jour les infos modifiables du profil (prénom, nom, photo)

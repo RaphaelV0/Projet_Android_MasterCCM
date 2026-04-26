@@ -30,7 +30,8 @@ import fr.upjv.geoevent.domain.models.User;
  */
 public class ConnexionActivity extends AppCompatActivity {
 
-    private enum AuthMode { LOGIN, REGISTER }
+    private enum AuthMode {LOGIN, REGISTER}
+
     private AuthMode currentMode = AuthMode.LOGIN;
 
     private IAuthService authService;
@@ -70,31 +71,31 @@ public class ConnexionActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tabLogin    = findViewById(R.id.tabLogin);
+        tabLogin = findViewById(R.id.tabLogin);
         tabRegister = findViewById(R.id.tabRegister);
-        formLogin   = findViewById(R.id.formLogin);
+        formLogin = findViewById(R.id.formLogin);
         formRegister = findViewById(R.id.formRegister);
         loadingIndicator = findViewById(R.id.loadingIndicator);
 
-        loginEmailInput    = findViewById(R.id.loginEmailInput);
+        loginEmailInput = findViewById(R.id.loginEmailInput);
         loginPasswordInput = findViewById(R.id.loginPasswordInput);
-        loginEmailLayout   = findViewById(R.id.loginEmailLayout);
+        loginEmailLayout = findViewById(R.id.loginEmailLayout);
         loginPasswordLayout = findViewById(R.id.loginPasswordLayout);
-        loginErrorText     = findViewById(R.id.loginErrorText);
-        loginButton        = findViewById(R.id.loginButton);
-        loginGoogleButton  = findViewById(R.id.loginGoogleButton);
+        loginErrorText = findViewById(R.id.loginErrorText);
+        loginButton = findViewById(R.id.loginButton);
+        loginGoogleButton = findViewById(R.id.loginGoogleButton);
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
 
-        registerFirstNameInput        = findViewById(R.id.registerFirstNameInput);
-        registerLastNameInput         = findViewById(R.id.registerLastNameInput);
-        registerEmailInput            = findViewById(R.id.registerEmailInput);
-        registerPasswordInput         = findViewById(R.id.registerPasswordInput);
-        registerConfirmPasswordInput  = findViewById(R.id.registerConfirmPasswordInput);
-        registerEmailLayout           = findViewById(R.id.registerEmailLayout);
-        registerPasswordLayout        = findViewById(R.id.registerPasswordLayout);
+        registerFirstNameInput = findViewById(R.id.registerFirstNameInput);
+        registerLastNameInput = findViewById(R.id.registerLastNameInput);
+        registerEmailInput = findViewById(R.id.registerEmailInput);
+        registerPasswordInput = findViewById(R.id.registerPasswordInput);
+        registerConfirmPasswordInput = findViewById(R.id.registerConfirmPasswordInput);
+        registerEmailLayout = findViewById(R.id.registerEmailLayout);
+        registerPasswordLayout = findViewById(R.id.registerPasswordLayout);
         registerConfirmPasswordLayout = findViewById(R.id.registerConfirmPasswordLayout);
-        registerErrorText             = findViewById(R.id.registerErrorText);
-        registerButton                = findViewById(R.id.registerButton);
+        registerErrorText = findViewById(R.id.registerErrorText);
+        registerButton = findViewById(R.id.registerButton);
     }
 
     private void setupTabSwitcher() {
@@ -151,6 +152,7 @@ public class ConnexionActivity extends AppCompatActivity {
                         loginErrorText.setTextColor(getColor(R.color.geo_success));
                     });
                 }
+
                 @Override
                 public void onFailure(String errorMessage) {
                     runOnUiThread(() -> {
@@ -169,7 +171,7 @@ public class ConnexionActivity extends AppCompatActivity {
     private void attemptLogin() {
         clearAllErrors();
 
-        String email    = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
+        String email = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
         String password = loginPasswordInput.getText() != null ? loginPasswordInput.getText().toString() : "";
 
         boolean valid = true;
@@ -194,6 +196,7 @@ public class ConnexionActivity extends AppCompatActivity {
                     navigateToMain();
                 });
             }
+
             @Override
             public void onFailure(String errorMessage) {
                 runOnUiThread(() -> {
@@ -211,16 +214,20 @@ public class ConnexionActivity extends AppCompatActivity {
     private void attemptRegister() {
         clearAllErrors();
 
-        String firstName       = registerFirstNameInput.getText() != null ? registerFirstNameInput.getText().toString().trim() : "";
-        String lastName        = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
-        String email           = registerEmailInput.getText() != null ? registerEmailInput.getText().toString().trim() : "";
-        String password        = registerPasswordInput.getText() != null ? registerPasswordInput.getText().toString() : "";
+        String firstName = registerFirstNameInput.getText() != null ? registerFirstNameInput.getText().toString().trim() : "";
+        String lastName = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
+        String email = registerEmailInput.getText() != null ? registerEmailInput.getText().toString().trim() : "";
+        String password = registerPasswordInput.getText() != null ? registerPasswordInput.getText().toString() : "";
         String confirmPassword = registerConfirmPasswordInput.getText() != null ? registerConfirmPasswordInput.getText().toString() : "";
 
         boolean valid = true;
 
         if (firstName.isEmpty()) {
-            findViewById(R.id.registerFirstNameLayout);
+            ((TextInputLayout)findViewById(R.id.registerFirstNameLayout)).setError("Prénom requis");
+            valid = false;
+        }
+        if(lastName.isEmpty()) {
+            ((TextInputLayout)findViewById(R.id.registerLastNameLayout)).setError("Nom requis");
             valid = false;
         }
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -247,6 +254,7 @@ public class ConnexionActivity extends AppCompatActivity {
                     navigateToMain();
                 });
             }
+
             @Override
             public void onFailure(String errorMessage) {
                 runOnUiThread(() -> {
@@ -295,20 +303,25 @@ public class ConnexionActivity extends AppCompatActivity {
      * Traduit les messages d'erreur Firebase (en anglais) en messages
      * compréhensibles pour l'utilisateur francophone.
      */
+    // Dans ConnexionActivity.java, j'ai complété la fin du fichier :
     private String translateFirebaseError(String firebaseMessage) {
         if (firebaseMessage == null) return "Une erreur est survenue.";
-        if (firebaseMessage.contains("password is invalid") || firebaseMessage.contains("INVALID_PASSWORD")) {
-            return "Mot de passe incorrect.";
+
+        String msg = firebaseMessage.toLowerCase();
+
+        if (msg.contains("password") || msg.contains("invalid_password")) {
+            return "Mot de passe incorrect ou trop faible.";
         }
-        if (firebaseMessage.contains("no user record") || firebaseMessage.contains("USER_NOT_FOUND")) {
-            return "Aucun compte trouvé pour cet email.";
+        if (msg.contains("user-not-found") || msg.contains("no user")) {
+            return "Aucun compte trouvé avec cet email.";
         }
-        if (firebaseMessage.contains("email address is already in use") || firebaseMessage.contains("EMAIL_EXISTS")) {
-            return "Cette adresse email est déjà utilisée.";
+        if (msg.contains("email-already-in-use") || msg.contains("already exists")) {
+            return "Cet email est déjà utilisé par un autre compte.";
         }
-        if (firebaseMessage.contains("network")) {
-            return "Erreur réseau. Vérifiez votre connexion.";
+        if (msg.contains("network") || msg.contains("connection")) {
+            return "Problème de connexion réseau.";
         }
-        return firebaseMessage;
+
+        return "Erreur : " + firebaseMessage;
     }
 }
