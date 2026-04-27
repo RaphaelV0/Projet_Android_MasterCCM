@@ -1,7 +1,9 @@
 package fr.upjv.geoevent.domain.data.firebase;
 
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 import fr.upjv.geoevent.domain.models.User;
 import fr.upjv.geoevent.domain.repository.UserRepository;
@@ -55,6 +57,35 @@ public class FirebaseAuthServiceImpl implements IAuthService {
     }
 
     @Override
+    public void loginWithGoogle(String idToken, AuthCallback callback) {
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+        auth.signInWithCredential(credential)
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser fbUser = authResult.getUser();
+                    if (fbUser != null) {
+                        User user = mapFirebaseUserToUser(fbUser);
+                        
+                        // Si c'est une première connexion, on crée le profil Firestore
+                        if (authResult.getAdditionalUserInfo() != null && authResult.getAdditionalUserInfo().isNewUser()) {
+                            // On essaie de récupérer le nom/prénom depuis Google
+                            String displayName = fbUser.getDisplayName();
+                            if (displayName != null && !displayName.isEmpty()) {
+                                String[] parts = displayName.split(" ", 2);
+                                user.setFirstName(parts[0]);
+                                if (parts.length > 1) user.setLastName(parts[1]);
+                            }
+                            new UserRepository().createUser(user);
+                        }
+                        
+                        callback.onSuccess(user);
+                    } else {
+                        callback.onFailure("Erreur lors de la connexion Google.");
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    @Override
     public void logout() {
         auth.signOut();
     }
@@ -85,8 +116,7 @@ public class FirebaseAuthServiceImpl implements IAuthService {
         User user = new User();
         user.setUid(fbUser.getUid());
         user.setEmail(fbUser.getEmail());
-        // Note: Le prénom/nom ne sont pas dans FirebaseUser par défaut, 
-        // ils sont stockés dans Firestore. Ici on map ce qu'on peut depuis Auth.
+        user.setPhotoUrl(fbUser.getPhotoUrl() != null ? fbUser.getPhotoUrl().toString() : null);
         return user;
     }
 }

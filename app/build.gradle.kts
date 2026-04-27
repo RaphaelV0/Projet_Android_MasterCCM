@@ -5,12 +5,10 @@ plugins {
 
 android {
     namespace = "fr.upjv.geoevent"
-    // On repasse à 36 pour satisfaire les dépendances récentes (androidx.activity 1.12.4, etc.)
     compileSdk = 36
 
     defaultConfig {
         applicationId = "fr.upjv.geoevent"
-        // On garde un minSdk bas pour que ça tourne sur votre émulateur (API 28/31)
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -51,6 +49,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
