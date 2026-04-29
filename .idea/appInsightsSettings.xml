@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="AppInsightsSettings">
+    <option name="selectedTabId" value="Firebase Crashlytics" />
     <option name="tabSettings">
       <map>
         <entry key="Firebase Crashlytics">
@@ -9,9 +10,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="fr.upjv.geoevent" />
-                  <option name="mobileSdkAppId" value="1:548704308856:android:39006b69f7a6f1b8bce78d" />
-                  <option name="projectId" value="ccmandroidprojet2026" />
-                  <option name="projectNumber" value="548704308856" />
+                  <option name="mobileSdkAppId" value="1:67867949749:android:ce61e960482903df191cfc" />
+                  <option name="projectId" value="ccmandroidgp2026" />
+                  <option name="projectNumber" value="67867949749" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

@@ -45,6 +45,8 @@ public interface IAuthService {
                   String firstName, String lastName,
                   AuthCallback callback);
 
+
+    void loginWithGoogle(String idToken, AuthCallback callback);
     /**
      * Déconnecte l'utilisateur courant de la session.
      */

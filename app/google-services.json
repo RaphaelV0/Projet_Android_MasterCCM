@@ -12,7 +12,20 @@
           "package_name": "fr.upjv.geoevent"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "67867949749-3dfs603dksgf5d4d1fhn0sc9qlkalsdb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "fr.upjv.geoevent",
+            "certificate_hash": "7b8446176ad31e2f4fea84f95095a3e85763b623"
+          }
+        },
+        {
+          "client_id": "67867949749-93iipv2kt3n9lr24kjna5lm9bdbddnbg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBxem4HMYgq85XPaiPPBmzWkoEocmMAzFc"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "67867949749-93iipv2kt3n9lr24kjna5lm9bdbddnbg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

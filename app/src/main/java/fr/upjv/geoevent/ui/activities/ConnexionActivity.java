@@ -2,7 +2,7 @@ package fr.upjv.geoevent.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.view.animation.AnimationUtils;
@@ -10,29 +10,32 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import fr.upjv.geoevent.R;
-import fr.upjv.geoevent.services.IAuthService;
-import fr.upjv.geoevent.domain.data.firebase.FirebaseAuthServiceImpl;
+import fr.upjv.geoevent.domain.auth.AuthServiceFactory;
 import fr.upjv.geoevent.domain.models.User;
+import fr.upjv.geoevent.services.IAuthService;
 
 /**
  * Écran unique d'authentification.
- * Gère deux états : CONNEXION et INSCRIPTION, via un tab switcher animé.
- *
- * Dépend uniquement de IAuthService : si le collègue change l'implémentation
- * (Firebase → Supabase), seule la ligne d'instanciation change ici.
  */
 public class ConnexionActivity extends AppCompatActivity {
 
-    private enum AuthMode { LOGIN, REGISTER }
+    private enum AuthMode {LOGIN, REGISTER}
     private AuthMode currentMode = AuthMode.LOGIN;
-
     private IAuthService authService;
 
     private TextView tabLogin, tabRegister;
@@ -51,12 +54,15 @@ public class ConnexionActivity extends AppCompatActivity {
     private TextView registerErrorText;
     private MaterialButton registerButton;
 
+    private GoogleSignInClient googleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connexion);
 
-        authService = new FirebaseAuthServiceImpl();
+        authService = AuthServiceFactory.create();
 
         if (authService.isLoggedIn()) {
             navigateToMain();
@@ -67,34 +73,35 @@ public class ConnexionActivity extends AppCompatActivity {
         setupTabSwitcher();
         setupLoginForm();
         setupRegisterForm();
+        setupGoogleSignIn();
     }
 
     private void initViews() {
-        tabLogin    = findViewById(R.id.tabLogin);
+        tabLogin = findViewById(R.id.tabLogin);
         tabRegister = findViewById(R.id.tabRegister);
-        formLogin   = findViewById(R.id.formLogin);
+        formLogin = findViewById(R.id.formLogin);
         formRegister = findViewById(R.id.formRegister);
         loadingIndicator = findViewById(R.id.loadingIndicator);
 
-        loginEmailInput    = findViewById(R.id.loginEmailInput);
+        loginEmailInput = findViewById(R.id.loginEmailInput);
         loginPasswordInput = findViewById(R.id.loginPasswordInput);
-        loginEmailLayout   = findViewById(R.id.loginEmailLayout);
+        loginEmailLayout = findViewById(R.id.loginEmailLayout);
         loginPasswordLayout = findViewById(R.id.loginPasswordLayout);
-        loginErrorText     = findViewById(R.id.loginErrorText);
-        loginButton        = findViewById(R.id.loginButton);
-        loginGoogleButton  = findViewById(R.id.loginGoogleButton);
+        loginErrorText = findViewById(R.id.loginErrorText);
+        loginButton = findViewById(R.id.loginButton);
+        loginGoogleButton = findViewById(R.id.loginGoogleButton);
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
 
-        registerFirstNameInput        = findViewById(R.id.registerFirstNameInput);
-        registerLastNameInput         = findViewById(R.id.registerLastNameInput);
-        registerEmailInput            = findViewById(R.id.registerEmailInput);
-        registerPasswordInput         = findViewById(R.id.registerPasswordInput);
-        registerConfirmPasswordInput  = findViewById(R.id.registerConfirmPasswordInput);
-        registerEmailLayout           = findViewById(R.id.registerEmailLayout);
-        registerPasswordLayout        = findViewById(R.id.registerPasswordLayout);
+        registerFirstNameInput = findViewById(R.id.registerFirstNameInput);
+        registerLastNameInput = findViewById(R.id.registerLastNameInput);
+        registerEmailInput = findViewById(R.id.registerEmailInput);
+        registerPasswordInput = findViewById(R.id.registerPasswordInput);
+        registerConfirmPasswordInput = findViewById(R.id.registerConfirmPasswordInput);
+        registerEmailLayout = findViewById(R.id.registerEmailLayout);
+        registerPasswordLayout = findViewById(R.id.registerPasswordLayout);
         registerConfirmPasswordLayout = findViewById(R.id.registerConfirmPasswordLayout);
-        registerErrorText             = findViewById(R.id.registerErrorText);
-        registerButton                = findViewById(R.id.registerButton);
+        registerErrorText = findViewById(R.id.registerErrorText);
+        registerButton = findViewById(R.id.registerButton);
     }
 
     private void setupTabSwitcher() {
@@ -105,13 +112,11 @@ public class ConnexionActivity extends AppCompatActivity {
     private void switchToMode(AuthMode mode) {
         if (currentMode == mode) return;
         currentMode = mode;
-
         if (mode == AuthMode.LOGIN) {
             tabLogin.setBackgroundResource(R.drawable.bg_tab_selected);
             tabLogin.setTextColor(getColor(R.color.white));
             tabRegister.setBackgroundResource(android.R.color.transparent);
             tabRegister.setTextColor(getColor(R.color.geo_text_secondary));
-
             formLogin.setVisibility(View.VISIBLE);
             formLogin.startAnimation(AnimationUtils.loadAnimation(this, android.R.anim.fade_in));
             formRegister.setVisibility(View.GONE);
@@ -120,87 +125,94 @@ public class ConnexionActivity extends AppCompatActivity {
             tabRegister.setTextColor(getColor(R.color.white));
             tabLogin.setBackgroundResource(android.R.color.transparent);
             tabLogin.setTextColor(getColor(R.color.geo_text_secondary));
-
             formRegister.setVisibility(View.VISIBLE);
             formRegister.startAnimation(AnimationUtils.loadAnimation(this, android.R.anim.fade_in));
             formLogin.setVisibility(View.GONE);
         }
-
         clearAllErrors();
     }
 
     private void setupLoginForm() {
         loginButton.setOnClickListener(v -> attemptLogin());
-
         forgotPasswordText.setOnClickListener(v -> {
-            String email = "";
-            if (loginEmailInput.getText() != null) {
-                email = loginEmailInput.getText().toString().trim();
-            }
+            String email = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
             if (email.isEmpty()) {
-                showLoginError("Entrez votre email pour réinitialiser le mot de passe.");
+                showLoginError("Entrez votre email pour réinitialiser.");
                 return;
             }
             setLoading(true);
             authService.sendPasswordResetEmail(email, new IAuthService.AuthCallback() {
-                @Override
-                public void onSuccess(User user) {
-                    runOnUiThread(() -> {
-                        setLoading(false);
-                        showLoginError("Email de réinitialisation envoyé !");
-                        loginErrorText.setTextColor(getColor(R.color.geo_success));
-                    });
+                @Override public void onSuccess(User user) {
+                    runOnUiThread(() -> { setLoading(false); showLoginError("Email envoyé !"); });
                 }
-                @Override
-                public void onFailure(String errorMessage) {
-                    runOnUiThread(() -> {
-                        setLoading(false);
-                        showLoginError(errorMessage);
-                    });
+                @Override public void onFailure(String err) {
+                    runOnUiThread(() -> { setLoading(false); showLoginError(err); });
                 }
             });
         });
+    }
+
+    private void setupGoogleSignIn() {
+        // Configuration Google Sign-In
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id)) // Généré par Firebase
+                .requestEmail()
+                .build();
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            if (account != null) {
+                                firebaseAuthWithGoogle(account.getIdToken());
+                            }
+                        } catch (ApiException e) {
+                            showLoginError("Échec Google : " + e.getStatusCode());
+                        }
+                    }
+                }
+        );
 
         loginGoogleButton.setOnClickListener(v -> {
-            showLoginError("Connexion Google — à implémenter avec Firebase.");
+            setLoading(true);
+            googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
+        });
+    }
+
+    private void firebaseAuthWithGoogle(String idToken) {
+        authService.loginWithGoogle(idToken, new IAuthService.AuthCallback() {
+            @Override
+            public void onSuccess(User user) {
+                runOnUiThread(() -> { setLoading(false); navigateToMain(); });
+            }
+            @Override
+            public void onFailure(String errorMessage) {
+                runOnUiThread(() -> { setLoading(false); showLoginError(errorMessage); });
+            }
         });
     }
 
     private void attemptLogin() {
         clearAllErrors();
-
-        String email    = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
+        String email = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
         String password = loginPasswordInput.getText() != null ? loginPasswordInput.getText().toString() : "";
-
-        boolean valid = true;
-
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             loginEmailLayout.setError("Email invalide");
-            valid = false;
+            return;
         }
         if (password.isEmpty()) {
             loginPasswordLayout.setError("Mot de passe requis");
-            valid = false;
+            return;
         }
-
-        if (!valid) return;
-
         setLoading(true);
         authService.login(email, password, new IAuthService.AuthCallback() {
-            @Override
-            public void onSuccess(User user) {
-                runOnUiThread(() -> {
-                    setLoading(false);
-                    navigateToMain();
-                });
-            }
-            @Override
-            public void onFailure(String errorMessage) {
-                runOnUiThread(() -> {
-                    setLoading(false);
-                    showLoginError(translateFirebaseError(errorMessage));
-                });
-            }
+            @Override public void onSuccess(User user) { runOnUiThread(() -> { setLoading(false); navigateToMain(); }); }
+            @Override public void onFailure(String err) { runOnUiThread(() -> { setLoading(false); showLoginError(translateFirebaseError(err)); }); }
         });
     }
 
@@ -210,62 +222,32 @@ public class ConnexionActivity extends AppCompatActivity {
 
     private void attemptRegister() {
         clearAllErrors();
-
-        String firstName       = registerFirstNameInput.getText() != null ? registerFirstNameInput.getText().toString().trim() : "";
-        String lastName        = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
-        String email           = registerEmailInput.getText() != null ? registerEmailInput.getText().toString().trim() : "";
-        String password        = registerPasswordInput.getText() != null ? registerPasswordInput.getText().toString() : "";
+        String firstName = registerFirstNameInput.getText() != null ? registerFirstNameInput.getText().toString().trim() : "";
+        String lastName = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
+        String email = registerEmailInput.getText() != null ? registerEmailInput.getText().toString().trim() : "";
+        String password = registerPasswordInput.getText() != null ? registerPasswordInput.getText().toString() : "";
         String confirmPassword = registerConfirmPasswordInput.getText() != null ? registerConfirmPasswordInput.getText().toString() : "";
 
-        boolean valid = true;
-
-        if (firstName.isEmpty()) {
-            findViewById(R.id.registerFirstNameLayout);
-            valid = false;
-        }
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            registerEmailLayout.setError("Email invalide");
-            valid = false;
-        }
-        if (password.length() < 8) {
-            registerPasswordLayout.setError("8 caractères minimum");
-            valid = false;
-        }
-        if (!password.equals(confirmPassword)) {
-            registerConfirmPasswordLayout.setError("Les mots de passe ne correspondent pas");
-            valid = false;
-        }
-
-        if (!valid) return;
+        if (firstName.isEmpty()) { ((TextInputLayout)findViewById(R.id.registerFirstNameLayout)).setError("Requis"); return; }
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) { registerEmailLayout.setError("Email invalide"); return; }
+        if (password.length() < 8) { registerPasswordLayout.setError("8 caractères min."); return; }
+        if (!password.equals(confirmPassword)) { registerConfirmPasswordLayout.setError("Différents"); return; }
 
         setLoading(true);
         authService.register(email, password, firstName, lastName, new IAuthService.AuthCallback() {
-            @Override
-            public void onSuccess(User user) {
-                runOnUiThread(() -> {
-                    setLoading(false);
-                    navigateToMain();
-                });
-            }
-            @Override
-            public void onFailure(String errorMessage) {
-                runOnUiThread(() -> {
-                    setLoading(false);
-                    showRegisterError(translateFirebaseError(errorMessage));
-                });
-            }
+            @Override public void onSuccess(User user) { runOnUiThread(() -> { setLoading(false); navigateToMain(); }); }
+            @Override public void onFailure(String err) { runOnUiThread(() -> { setLoading(false); showRegisterError(translateFirebaseError(err)); }); }
         });
     }
 
     private void setLoading(boolean isLoading) {
         loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         loginButton.setEnabled(!isLoading);
-        registerButton.setEnabled(!isLoading);
+        loginGoogleButton.setEnabled(!isLoading);
     }
 
     private void showLoginError(String message) {
         loginErrorText.setText(message);
-        loginErrorText.setTextColor(getColor(R.color.geo_error));
         loginErrorText.setVisibility(View.VISIBLE);
     }
 
@@ -285,30 +267,16 @@ public class ConnexionActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
+        startActivity(new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         finish();
     }
 
-    /**
-     * Traduit les messages d'erreur Firebase (en anglais) en messages
-     * compréhensibles pour l'utilisateur francophone.
-     */
     private String translateFirebaseError(String firebaseMessage) {
-        if (firebaseMessage == null) return "Une erreur est survenue.";
-        if (firebaseMessage.contains("password is invalid") || firebaseMessage.contains("INVALID_PASSWORD")) {
-            return "Mot de passe incorrect.";
-        }
-        if (firebaseMessage.contains("no user record") || firebaseMessage.contains("USER_NOT_FOUND")) {
-            return "Aucun compte trouvé pour cet email.";
-        }
-        if (firebaseMessage.contains("email address is already in use") || firebaseMessage.contains("EMAIL_EXISTS")) {
-            return "Cette adresse email est déjà utilisée.";
-        }
-        if (firebaseMessage.contains("network")) {
-            return "Erreur réseau. Vérifiez votre connexion.";
-        }
+        if (firebaseMessage == null) return "Erreur inconnue";
+        String msg = firebaseMessage.toLowerCase();
+        if (msg.contains("password")) return "Mot de passe incorrect.";
+        if (msg.contains("user-not-found")) return "Compte inconnu.";
+        if (msg.contains("email-already-in-use")) return "Email déjà utilisé.";
         return firebaseMessage;
     }
 }
