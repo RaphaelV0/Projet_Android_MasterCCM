@@ -20,4 +20,10 @@
         android:name="fr.upjv.geoevent.ui.fragments.ProfileFragment"
         android:label="Mon Profil"
         tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/navigation_event_detail"
+        android:name="fr.upjv.geoevent.ui.fragments.EventDetailFragment"
+        android:label="Détail événement"
+        tools:layout="@layout/fragment_event_register" />
 </navigation>

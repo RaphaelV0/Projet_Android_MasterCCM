@@ -1,7 +1,7 @@
 package fr.upjv.geoevent.ui.adapters;
 
 import android.content.Context;
-import android.content.Intent;
+import android.os.Bundle; // Added missing import
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +9,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.navigation.NavController; // Added missing import
+import androidx.navigation.Navigation; // Added missing import
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -17,12 +19,12 @@ import java.util.Locale;
 
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
-import fr.upjv.geoevent.ui.activities.EventRegister;
 
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     private List<Evenement> eventList;
-    private Context context;
+    private final Context context;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
     public EventAdapter(List<Evenement> eventList, Context context) {
         this.eventList = eventList;
@@ -32,7 +34,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.activity_item_event, parent, false);
+        // Use parent.getContext() to ensure the correct theme is applied
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_item_event, parent, false);
         return new EventViewHolder(view);
     }
 
@@ -43,24 +46,22 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.title.setText(event.getTitre());
         holder.location.setText(event.getLieu());
 
-        // Formatage de la date
         if (event.getDateEvenement() != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            holder.date.setText(sdf.format(event.getDateEvenement()));
+            holder.date.setText(dateFormat.format(event.getDateEvenement()));
         }
 
-        // Gestion du clic pour aller vers le détail (EventRegister)
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, EventRegister.class);
-            // On glisse l'objet complet dans le "colis"
-            intent.putExtra("EVENEMENT_EXTRA", event);
-            context.startActivity(intent);
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("EVENEMENT_EXTRA", event);
+
+            NavController navController = Navigation.findNavController(v);
+            navController.navigate(R.id.navigation_event_detail, bundle);
         });
     }
 
     @Override
     public int getItemCount() {
-        return eventList.size();
+        return eventList != null ? eventList.size() : 0;
     }
 
     public static class EventViewHolder extends RecyclerView.ViewHolder {
