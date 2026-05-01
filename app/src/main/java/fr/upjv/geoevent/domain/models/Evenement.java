@@ -45,6 +45,13 @@ public class Evenement implements Serializable {
     public double getLatitude() { return latitude; }
     public void setLatitude(double latitude) { this.latitude = latitude; }
 
+
+    public void setPosition(double longitude, double latitude){
+        this.longitude = longitude;
+        this.latitude = latitude;
+    }
+
+
     public List<Image> getImages() { return images; }
     public void setImages(List<Image> images) { this.images = images; }
 

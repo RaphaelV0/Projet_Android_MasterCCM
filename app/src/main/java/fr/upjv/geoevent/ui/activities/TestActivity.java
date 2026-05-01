@@ -9,6 +9,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.Date;
+
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.data.DataCallback;
 import fr.upjv.geoevent.domain.models.Evenement;
@@ -22,17 +24,22 @@ public class TestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_test);
 
         EvenementRepository repository = new EvenementRepository();
-
+        Date madate = new Date();
         // Création d'un nouvel événement
-        Evenement event = new Evenement();
-        event.setTitre("Concert à Saint-Quentin");
-        event.setDescription("Concert payant au palais des sports");
-        event.setLatitude(49.8566);
-        event.setLongitude(7.3522);
+        Evenement event = new Evenement("Concert à Saint-Quentin", "description test", "10 Rue de Flandre, 59210 Coudekerque-Branche, France", madate);
+        Evenement event2 = new Evenement("Jeux vidéo chez Brice", "Attention c'est une blague", "5 Av. de Remicourt, 02100 Saint-Quentin, France", madate);
 
-        repository.createEvent(event);
+        Evenement event3 = new Evenement("Allons à l'expo !! ", "Là c'est une blague", "Musée des Beaux-Arts Antoine Lécuyer, 28 Rue Antoine Lécuyer, 02100 Saint-Quentin", madate);
 
 
+        event.setPosition(49.848736, 3.294313);
+        event2.setPosition(49.8376020, 3.3051780);
+        event3.setPosition(49.8500072, 3.2814713);
+
+
+        //repository.createEvent(event);
+        //repository.createEvent(event2);
+        repository.createEvent(event3);
         // Récupération des événements (exemple)
 
 

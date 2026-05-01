@@ -14,6 +14,7 @@ public class MapServiceFactory {
      * @param context Contexte de l'application
      * @return Instance de MapService
      */
+
     public static MapService create(MapProviderType providerType, Context context) {
         switch (providerType) {
             case OPEN_STREET_MAP:

@@ -1,6 +1,7 @@
 package fr.upjv.geoevent.ui.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -10,19 +11,28 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.firestore.QuerySnapshot;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import fr.upjv.geoevent.R;
+import fr.upjv.geoevent.domain.data.DataCallback;
+import fr.upjv.geoevent.domain.models.Evenement;
+import fr.upjv.geoevent.domain.repository.EvenementRepository;
 import fr.upjv.geoevent.services.map.MapProviderType;
 import fr.upjv.geoevent.services.map.MapService;
 import fr.upjv.geoevent.services.map.MapServiceFactory;
+
 
 /**
  * Fragment affichant la carte en utilisant un service cartographique abstrait.
@@ -40,6 +50,9 @@ public class MapFragment extends Fragment {
     private static final double DEFAULT_LNG = 3.2870;
     private static final double DEFAULT_ZOOM = 15.0;
 
+    EvenementRepository repository;
+    private List<Evenement> eventList = new ArrayList<>();
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -53,9 +66,11 @@ public class MapFragment extends Fragment {
         mapService = MapServiceFactory.create(MAP_PROVIDER, requireContext());
         mapService.initialize(requireContext(), mapContainer);
 
+        repository = new EvenementRepository();
+
         // Affichage de la position utilisateur sur la carte
         mapService.showCurrentLocation();
-
+        this.loadEvents();
         // Centre la carte sur l’utilisateur si possible,
         // sinon sur une position par défaut
         afficherPositionEtEvenementsProches();
@@ -76,19 +91,12 @@ public class MapFragment extends Fragment {
 
             mapService.centerOn(userLat, userLng, 16.0);
 
-            List<EventItem> events = genererEvenementsProches(userLat, userLng);
-            for (EventItem event : events) {
-                mapService.addMarker(event.latitude, event.longitude, event.title);
-            }
         } else {
             // Fallback si aucune position n’est disponible
             mapService.centerOn(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
-
-            List<EventItem> events = genererEvenementsProches(DEFAULT_LAT, DEFAULT_LNG);
-            for (EventItem event : events) {
-                mapService.addMarker(event.latitude, event.longitude, event.title);
-            }
         }
+
+
     }
 
     /**
@@ -109,6 +117,10 @@ public class MapFragment extends Fragment {
         ) == PackageManager.PERMISSION_GRANTED;
 
         if (!fineGranted && !coarseGranted) {
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
             return null;
         }
 
@@ -147,22 +159,52 @@ public class MapFragment extends Fragment {
         return networkLocation;
     }
 
-    /**
-     * Génère des événements fictifs proches de l’utilisateur.
-     * Plus tard, cette méthode pourra être remplacée par des données venant
-     * de Firebase, Supabase ou d’une API.
-     */
-    @NonNull
-    private List<EventItem> genererEvenementsProches(double userLat, double userLng) {
-        List<EventItem> events = new ArrayList<>();
+    private final ActivityResultLauncher<String[]> locationPermissionLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestMultiplePermissions(),
+                    result -> {
+                        Boolean fine = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                        Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
 
-        events.add(new EventItem(userLat + 0.0020, userLng + 0.0010, "Concert en plein air"));
-        events.add(new EventItem(userLat - 0.0015, userLng + 0.0020, "Match de football"));
-        events.add(new EventItem(userLat + 0.0010, userLng - 0.0015, "Festival culturel"));
-        events.add(new EventItem(userLat - 0.0020, userLng - 0.0010, "Exposition locale"));
+                        if (fine != null && fine || coarse != null && coarse) {
+                            // ✅ Permission acceptée
+                            afficherPositionEtEvenementsProches();
+                        } else {
+                            // ❌ Refusée
+                            Toast.makeText(getContext(), "Permission localisation refusée", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
 
-        return events;
+    private void loadEvents() {
+        repository.getEvents(new DataCallback() {
+            @SuppressLint("NotifyDataSetChanged")
+            @Override
+            public void onSuccess(Object dataEvent) {
+                QuerySnapshot snapshot = (QuerySnapshot) dataEvent;
+
+                List<Evenement> loadedEvents = snapshot.toObjects(Evenement.class);
+
+                eventList.clear();
+                eventList.addAll(loadedEvents);
+
+                for (Evenement event : eventList) {
+                    mapService.addMarker(
+                            event.getLongitude(),
+                            event.getLatitude(),
+                            event.getTitre()
+                    );
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                //Toast.makeText(this, "Erreur : " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
+
 
     @Override
     public void onResume() {
@@ -189,18 +231,4 @@ public class MapFragment extends Fragment {
         }
     }
 
-    /**
-     * Petit modèle local pour représenter un événement à afficher sur la carte.
-     */
-    private static class EventItem {
-        final double latitude;
-        final double longitude;
-        final String title;
-
-        EventItem(double latitude, double longitude, String title) {
-            this.latitude = latitude;
-            this.longitude = longitude;
-            this.title = title;
-        }
-    }
 }
