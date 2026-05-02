@@ -47,8 +47,9 @@ public class Evenement implements Serializable {
 
 
     public void setPosition(double longitude, double latitude){
-        this.longitude = longitude;
         this.latitude = latitude;
+        this.longitude = longitude;
+
     }
 
 

@@ -190,8 +190,8 @@ public class MapFragment extends Fragment {
 
                 for (Evenement event : eventList) {
                     mapService.addMarker(
-                            event.getLongitude(),
                             event.getLatitude(),
+                            event.getLongitude(),
                             event.getTitre()
                     );
                 }
