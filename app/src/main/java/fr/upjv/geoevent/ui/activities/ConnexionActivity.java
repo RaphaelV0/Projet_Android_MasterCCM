@@ -272,11 +272,32 @@ public class ConnexionActivity extends AppCompatActivity {
     }
 
     private String translateFirebaseError(String firebaseMessage) {
-        if (firebaseMessage == null) return "Erreur inconnue";
+        Log.d("FirebaseError", firebaseMessage != null ? firebaseMessage : "null");
+        if (firebaseMessage == null) return "Une erreur est survenue.";
+        
         String msg = firebaseMessage.toLowerCase();
-        if (msg.contains("password")) return "Mot de passe incorrect.";
-        if (msg.contains("user-not-found")) return "Compte inconnu.";
-        if (msg.contains("email-already-in-use")) return "Email déjà utilisé.";
-        return firebaseMessage;
+        
+        // Gestion du message générique pour identifiants invalides
+        if (msg.contains("credential") || msg.contains("invalid") || msg.contains("expired")) {
+            return "Email ou mot de passe incorrect.";
+        }
+        
+        if (msg.contains("password")) {
+            return "Mot de passe incorrect.";
+        }
+        
+        if (msg.contains("user-not-found") || msg.contains("no user")) {
+            return "Aucun compte trouvé avec cet email.";
+        }
+        
+        if (msg.contains("email-already-in-use") || msg.contains("email_exists")) {
+            return "Cet email est déjà utilisé par un autre compte.";
+        }
+
+        if (msg.contains("network") || msg.contains("connection")) {
+            return "Problème de connexion réseau. Vérifiez votre internet.";
+        }
+        
+        return "Erreur d'authentification : " + firebaseMessage;
     }
 }
