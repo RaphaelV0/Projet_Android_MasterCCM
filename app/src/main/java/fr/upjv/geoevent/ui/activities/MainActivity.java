@@ -1,5 +1,9 @@
 package fr.upjv.geoevent.ui.activities;
 
+
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,8 +15,14 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import fr.upjv.geoevent.R;
+import fr.upjv.geoevent.receivers.BatteryReceiver;
+import fr.upjv.geoevent.receivers.NetworkReceiver;
 
 public class MainActivity extends AppCompatActivity {
+
+    // Déclarations
+    private NetworkReceiver networkReceiver;
+    private BatteryReceiver batteryReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +50,41 @@ public class MainActivity extends AppCompatActivity {
                 R.id.navigation_map, R.id.navigation_list, R.id.navigation_profile)
                 .build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+
+
+        // Initialisation des BroadcastReceiver globaux
+        networkReceiver = new NetworkReceiver(isConnected -> {
+            if (!isConnected) {
+                // Ici, plus tard, on pourra désactiver le chargement des événements
+                // ou afficher un état "offline" dans l'application.
+            }
+        });
+
+        batteryReceiver = new BatteryReceiver();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        registerReceiver(
+                networkReceiver,
+                new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        );
+
+        registerReceiver(
+                batteryReceiver,
+                new IntentFilter(Intent.ACTION_BATTERY_LOW)
+        );
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        unregisterReceiver(networkReceiver);
+        unregisterReceiver(batteryReceiver);
+
+
 
         // 5. CACHER la barre du bas sur les écrans de détails ou d'ajout (comme sur ta maquette)
 //        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
