@@ -10,56 +10,44 @@ import android.view.ViewGroup;
  */
 public class GoogleMapService implements MapService {
 
-    // TODO: Ajouter les imports nécessaires pour Google Maps
-    // import com.google.android.gms.maps.GoogleMap;
-    // import com.google.android.gms.maps.MapView;
-    // import com.google.android.gms.maps.OnMapReadyCallback;
-    // etc.
-
-    // Champs pour Google Maps
-    // private MapView mapView;
-    // private GoogleMap googleMap;
-
     @Override
     public void initialize(Context context, ViewGroup container) {
-        // TODO: Implémenter l'initialisation de Google Maps
-        // Créer MapView, l'ajouter au container, configurer
         throw new UnsupportedOperationException("Google Maps non encore implémenté");
     }
 
     @Override
     public void centerOn(double latitude, double longitude, double zoom) {
-        // TODO: Centrer la carte Google Maps
         throw new UnsupportedOperationException("Google Maps non encore implémenté");
     }
 
     @Override
     public void showCurrentLocation() {
-        // TODO: Afficher la localisation actuelle sur Google Maps
         throw new UnsupportedOperationException("Google Maps non encore implémenté");
     }
 
     @Override
     public void addMarker(double latitude, double longitude, String title) {
-        // TODO: Ajouter un marqueur sur Google Maps
+        throw new UnsupportedOperationException("Google Maps non encore implémenté");
+    }
+
+    @Override
+    public void clear() {
+        // TODO: Implémenter la suppression des marqueurs Google Maps
         throw new UnsupportedOperationException("Google Maps non encore implémenté");
     }
 
     @Override
     public void release() {
-        // TODO: Libérer les ressources Google Maps
-        // mapView.onDestroy();
+        // TODO: Libérer les ressources
     }
 
     @Override
     public void onResume() {
-        // TODO: Gérer onResume pour Google Maps
-        // mapView.onResume();
+        // TODO: Gérer onResume
     }
 
     @Override
     public void onPause() {
-        // TODO: Gérer onPause pour Google Maps
-        // mapView.onPause();
+        // TODO: Gérer onPause
     }
 }

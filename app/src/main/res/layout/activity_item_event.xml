@@ -56,6 +56,14 @@
                 android:text="Date de l'événement"
                 android:drawableStart="@android:drawable/ic_menu_my_calendar"
                 android:drawablePadding="4dp" />
+
+            <TextView
+                android:id="@+id/distanceEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FF0000"
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

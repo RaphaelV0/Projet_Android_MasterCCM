@@ -13,7 +13,6 @@ import org.osmdroid.api.IMapController;
 
 /**
  * Implémentation du service cartographique utilisant OpenStreetMap via OSMDroid.
- * Gère l'initialisation, le centrage, la localisation et les marqueurs.
  */
 public class OpenStreetMapService implements MapService {
 
@@ -22,17 +21,14 @@ public class OpenStreetMapService implements MapService {
 
     @Override
     public void initialize(Context context, ViewGroup container) {
-        // Configuration OSMDroid
         Configuration.getInstance().setUserAgentValue(context.getPackageName());
 
-        // Créer la MapView
         mapView = new MapView(context);
         mapView.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
         mapView.setMultiTouchControls(true);
 
-        // Ajouter au conteneur
         container.addView(mapView);
 
         // Centrer par défaut sur Saint-Quentin
@@ -56,7 +52,6 @@ public class OpenStreetMapService implements MapService {
         if (mapView != null && locationOverlay == null) {
             locationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(mapView.getContext()), mapView);
             locationOverlay.enableMyLocation();
-            locationOverlay.enableFollowLocation();
             mapView.getOverlays().add(locationOverlay);
         }
     }
@@ -66,8 +61,18 @@ public class OpenStreetMapService implements MapService {
         if (mapView != null) {
             Marker marker = new Marker(mapView);
             marker.setPosition(new GeoPoint(latitude, longitude));
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marker.setTitle(title);
             mapView.getOverlays().add(marker);
+        }
+    }
+
+    @Override
+    public void clear() {
+        if (mapView != null) {
+            mapView.getOverlays().clear();
+            locationOverlay = null;
+            mapView.invalidate();
         }
     }
 
