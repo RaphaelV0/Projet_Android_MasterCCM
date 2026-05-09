@@ -1,8 +1,8 @@
 package fr.upjv.geoevent.ui.fragments;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -11,15 +11,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.Toast;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
@@ -32,203 +33,111 @@ import fr.upjv.geoevent.domain.repository.EvenementRepository;
 import fr.upjv.geoevent.services.map.MapProviderType;
 import fr.upjv.geoevent.services.map.MapService;
 import fr.upjv.geoevent.services.map.MapServiceFactory;
+import fr.upjv.geoevent.ui.activities.NewEventActivity;
+import fr.upjv.geoevent.ui.viewmodels.EventViewModel;
 
-
-/**
- * Fragment affichant la carte en utilisant un service cartographique abstrait.
- * Permet de changer facilement de fournisseur cartographique (OpenStreetMap ou Google Maps).
- */
 public class MapFragment extends Fragment {
 
     private MapService mapService;
-
-    // Fournisseur actif pour l’instant
-    private static final MapProviderType MAP_PROVIDER = MapProviderType.OPEN_STREET_MAP;
-
-    // Position par défaut : Saint-Quentin
-    private static final double DEFAULT_LAT = 49.8489;
-    private static final double DEFAULT_LNG = 3.2870;
-    private static final double DEFAULT_ZOOM = 15.0;
-
-    EvenementRepository repository;
-    private List<Evenement> eventList = new ArrayList<>();
+    private EventViewModel viewModel;
+    private List<Evenement> allEvents = new ArrayList<>();
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
-        FrameLayout mapContainer = view.findViewById(R.id.map_container);
+        // 1. Initialisation du ViewModel Partagé
+        viewModel = new ViewModelProvider(requireActivity()).get(EventViewModel.class);
 
-        mapService = MapServiceFactory.create(MAP_PROVIDER, requireContext());
+        // 2. Configuration du Service de Carte
+        FrameLayout mapContainer = view.findViewById(R.id.map_container);
+        mapService = MapServiceFactory.create(MapProviderType.OPEN_STREET_MAP, requireContext());
         mapService.initialize(requireContext(), mapContainer);
 
-        repository = new EvenementRepository();
+        // 3. Configuration du Bouton d'ajout (FAB)
+        FloatingActionButton fabAddEvent = view.findViewById(R.id.fab_add_event);
+        if (fabAddEvent != null) {
+            fabAddEvent.setOnClickListener(v -> {
+                Intent intent = new Intent(requireContext(), NewEventActivity.class);
+                startActivity(intent);
+            });
+        }
 
-        // Affichage de la position utilisateur sur la carte
+        // 4. Configuration de la SeekBar et du Texte
+        SeekBar seekBar = view.findViewById(R.id.seekbar_distance);
+        TextView tvDistance = view.findViewById(R.id.tv_distance_filter);
+
+        if (seekBar != null) {
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    int radius = progress > 0 ? progress : 1;
+                    if (tvDistance != null) tvDistance.setText("Rayon de recherche : " + radius + " km");
+                    viewModel.setRadius(radius); // Met à jour le ViewModel pour la liste
+                    appliquerFiltrage(); // Met à jour la carte
+                }
+                @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+            });
+        }
+
         mapService.showCurrentLocation();
-        this.loadEvents();
-        // Centre la carte sur l’utilisateur si possible,
-        // sinon sur une position par défaut
-        afficherPositionEtEvenementsProches();
+        loadEvents();
 
         return view;
     }
 
-    /**
-     * Centre la carte sur la position actuelle de l'utilisateur
-     * et ajoute quelques événements simulés autour de lui.
-     */
-    private void afficherPositionEtEvenementsProches() {
-        Location userLocation = recupererDernierePositionConnue();
+    private void appliquerFiltrage() {
+        if (mapService == null) return;
 
-        if (userLocation != null) {
-            double userLat = userLocation.getLatitude();
-            double userLng = userLocation.getLongitude();
+        mapService.clear();
+        mapService.showCurrentLocation();
 
-            mapService.centerOn(userLat, userLng, 16.0);
+        Location userLoc = recupererDernierePositionConnue();
+        int radius = viewModel.getRadius().getValue() != null ? viewModel.getRadius().getValue() : 10;
 
-        } else {
-            // Fallback si aucune position n’est disponible
-            mapService.centerOn(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
-        }
+        for (Evenement event : allEvents) {
+            if (userLoc != null) {
+                float[] results = new float[1];
+                Location.distanceBetween(userLoc.getLatitude(), userLoc.getLongitude(),
+                        event.getLatitude(), event.getLongitude(), results);
 
-
-    }
-
-    /**
-     * Récupère la dernière position connue via GPS ou réseau.
-     */
-    @Nullable
-    private Location recupererDernierePositionConnue() {
-        Context context = requireContext();
-
-        boolean fineGranted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
-
-        boolean coarseGranted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
-
-        if (!fineGranted && !coarseGranted) {
-            locationPermissionLauncher.launch(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
-            return null;
-        }
-
-        LocationManager locationManager =
-                (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-
-        if (locationManager == null) {
-            return null;
-        }
-
-        Location gpsLocation = null;
-        Location networkLocation = null;
-
-        try {
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (results[0] / 1000f <= radius) {
+                    mapService.addMarker(event.getLatitude(), event.getLongitude(), event.getTitre());
+                }
+            } else {
+                mapService.addMarker(event.getLatitude(), event.getLongitude(), event.getTitre());
             }
-
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            }
-        } catch (SecurityException e) {
-            return null;
         }
-
-        if (gpsLocation != null && networkLocation != null) {
-            return gpsLocation.getTime() > networkLocation.getTime()
-                    ? gpsLocation
-                    : networkLocation;
-        }
-
-        if (gpsLocation != null) {
-            return gpsLocation;
-        }
-
-        return networkLocation;
     }
-
-    private final ActivityResultLauncher<String[]> locationPermissionLauncher =
-            registerForActivityResult(
-                    new ActivityResultContracts.RequestMultiplePermissions(),
-                    result -> {
-                        Boolean fine = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
-                        Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
-
-                        if (fine != null && fine || coarse != null && coarse) {
-                            // ✅ Permission acceptée
-                            afficherPositionEtEvenementsProches();
-                        } else {
-                            // ❌ Refusée
-                            Toast.makeText(getContext(), "Permission localisation refusée", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-            );
 
     private void loadEvents() {
-        repository.getEvents(new DataCallback() {
-            @SuppressLint("NotifyDataSetChanged")
+        new EvenementRepository().getEvents(new DataCallback() {
             @Override
-            public void onSuccess(Object dataEvent) {
-                QuerySnapshot snapshot = (QuerySnapshot) dataEvent;
-
-                List<Evenement> loadedEvents = snapshot.toObjects(Evenement.class);
-
-                eventList.clear();
-                eventList.addAll(loadedEvents);
-
-                for (Evenement event : eventList) {
-                    mapService.addMarker(
-                            event.getLatitude(),
-                            event.getLongitude(),
-                            event.getTitre()
-                    );
+            public void onSuccess(Object data) {
+                if (data instanceof QuerySnapshot) {
+                    allEvents = ((QuerySnapshot) data).toObjects(Evenement.class);
+                    viewModel.setEvents(allEvents);
+                    appliquerFiltrage();
                 }
             }
-
-            @Override
-            public void onError(Exception e) {
-                //Toast.makeText(this, "Erreur : " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
+            @Override public void onError(Exception e) {}
         });
     }
 
-
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mapService != null) {
-            mapService.onResume();
-        }
+    @Nullable
+    private Location recupererDernierePositionConnue() {
+        Context context = requireContext();
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return null;
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        Location gps = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location net = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if (gps != null && net != null) return gps.getTime() > net.getTime() ? gps : net;
+        return (gps != null) ? gps : net;
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (mapService != null) {
-            mapService.onPause();
-        }
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (mapService != null) {
-            mapService.release();
-            mapService = null;
-        }
-    }
-
+    @Override public void onResume() { super.onResume(); if (mapService != null) mapService.onResume(); }
+    @Override public void onPause() { super.onPause(); if (mapService != null) mapService.onPause(); }
+    @Override public void onDestroyView() { super.onDestroyView(); if (mapService != null) { mapService.release(); mapService = null; } }
 }

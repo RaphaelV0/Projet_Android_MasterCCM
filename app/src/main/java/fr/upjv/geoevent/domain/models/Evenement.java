@@ -1,5 +1,6 @@
 package fr.upjv.geoevent.domain.models;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.ServerTimestamp;
 import java.io.Serializable;
 import java.util.Date;
@@ -16,6 +17,8 @@ public class Evenement implements Serializable {
     private int nombreParticipant;
     private Date dateEvenement;
 
+    private float distance;
+
     @ServerTimestamp
     private Date date_creation;
 
@@ -28,6 +31,17 @@ public class Evenement implements Serializable {
         this.lieu = lieu;
         this.dateEvenement = dateEvenement;
         this.nombreParticipant = 0;
+    }
+
+
+    @Exclude
+    public float getDistance() {
+        return distance;
+    }
+
+    @Exclude
+    public void setDistance(float distance) {
+        this.distance = distance;
     }
 
     public String getTitre() { return titre; }
@@ -45,13 +59,10 @@ public class Evenement implements Serializable {
     public double getLatitude() { return latitude; }
     public void setLatitude(double latitude) { this.latitude = latitude; }
 
-
     public void setPosition(double longitude, double latitude){
         this.latitude = latitude;
         this.longitude = longitude;
-
     }
-
 
     public List<Image> getImages() { return images; }
     public void setImages(List<Image> images) { this.images = images; }

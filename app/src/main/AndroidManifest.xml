@@ -42,14 +42,6 @@
         <activity
             android:name=".ui.activities.NewEventActivity"
             android:exported="true" />
-
-        <activity
-            android:name=".ui.activities.EventList"
-            android:exported="true" />
-
-        <activity
-            android:name=".ui.activities.EventRegister"
-            android:exported="false" />
     </application>
 
 </manifest>
