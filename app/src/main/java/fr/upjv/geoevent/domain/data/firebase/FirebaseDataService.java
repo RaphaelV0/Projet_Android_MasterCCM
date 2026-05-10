@@ -1,6 +1,7 @@
 package fr.upjv.geoevent.domain.data.firebase;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import fr.upjv.geoevent.domain.data.DataCallback;
 import fr.upjv.geoevent.domain.data.IDataService;
@@ -16,22 +17,19 @@ public class FirebaseDataService implements IDataService {
 
     @Override
     public void create(String collection, Object data) {
-
-        db.collection(collection)
-                .add(data);
+        db.collection(collection).add(data);
     }
 
     @Override
     public void update(String collection, String id, Object data) {
-
+        // Utilisation de SetOptions.merge() pour ne pas écraser les champs existants
         db.collection(collection)
                 .document(id)
-                .set(data);
+                .set(data, SetOptions.merge());
     }
 
     @Override
     public void delete(String collection, String id) {
-
         db.collection(collection)
                 .document(id)
                 .delete();
@@ -39,7 +37,6 @@ public class FirebaseDataService implements IDataService {
 
     @Override
     public void getById(String collection, String id, DataCallback callback) {
-
         db.collection(collection)
                 .document(id)
                 .get()
@@ -49,11 +46,9 @@ public class FirebaseDataService implements IDataService {
 
     @Override
     public void getAll(String collection, DataCallback callback) {
-
         db.collection(collection)
                 .get()
                 .addOnSuccessListener(callback::onSuccess)
                 .addOnFailureListener(callback::onError);
     }
 }
-
