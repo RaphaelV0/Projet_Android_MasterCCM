@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Titre de section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Envoyer une notification"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/geo_text_primary"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Envoyez un message push à tous les utilisateurs ou aux inscrits d'un événement."
+            android:textSize="13sp"
+            android:textColor="@color/geo_text_secondary"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Champ Titre -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="Titre de la notification"
+            app:startIconDrawable="@android:drawable/ic_menu_send"
+            app:startIconTint="@color/geo_blue_primary"
+            app:boxStrokeColor="@color/geo_blue_primary"
+            app:hintTextColor="@color/geo_text_secondary"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/notifTitleInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
+                android:textColor="@color/geo_text_primary"
+                android:textSize="15sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Champ Message -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:hint="Message"
+            app:boxStrokeColor="@color/geo_blue_primary"
+            app:hintTextColor="@color/geo_text_secondary"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/notifBodyInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="3"
+                android:gravity="top"
+                android:textColor="@color/geo_text_primary"
+                android:textSize="15sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/geo_divider"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Cible de la notification -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Destinataires"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/geo_text_primary"
+            android:layout_marginBottom="10dp" />
+
+        <RadioGroup
+            android:id="@+id/targetRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <RadioButton
+                android:id="@+id/radioAllUsers"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Tous les utilisateurs"
+                android:textSize="14sp"
+                android:textColor="@color/geo_text_primary"
+                android:checked="true"
+                android:button="@null"
+                android:background="@drawable/bg_tab_container"
+                android:drawableEnd="@android:drawable/btn_radio"
+                android:paddingHorizontal="14dp"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp" />
+
+            <RadioButton
+                android:id="@+id/radioSpecificEvent"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Inscrits d'un événement"
+                android:textSize="14sp"
+                android:textColor="@color/geo_text_primary"
+                android:button="@null"
+                android:background="@drawable/bg_tab_container"
+                android:drawableEnd="@android:drawable/btn_radio"
+                android:paddingHorizontal="14dp"
+                android:gravity="center_vertical" />
+        </RadioGroup>
+
+        <!-- Sélecteur d'événement (masqué par défaut) -->
+        <LinearLayout
+            android:id="@+id/eventSpinnerContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Choisir l'événement"
+                android:textSize="13sp"
+                android:textColor="@color/geo_text_secondary"
+                android:layout_marginBottom="6dp" />
+
+            <Spinner
+                android:id="@+id/eventSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_tab_container"
+                android:paddingHorizontal="14dp"
+                android:spinnerMode="dropdown" />
+        </LinearLayout>
+
+        <!-- Indicateur de chargement -->
+        <ProgressBar
+            android:id="@+id/notifLoading"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:indeterminateTint="@color/geo_orange_primary"
+            android:visibility="gone" />
+
+        <!-- Bouton Envoyer -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/sendNotifButton"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Envoyer la notification"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:letterSpacing="0.04"
+            app:backgroundTint="@color/geo_orange_primary"
+            app:cornerRadius="14dp"
+            app:elevation="4dp" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
