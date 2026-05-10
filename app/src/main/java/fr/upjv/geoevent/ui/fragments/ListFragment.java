@@ -1,77 +1,106 @@
 package fr.upjv.geoevent.ui.fragments;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
 import fr.upjv.geoevent.R;
-import fr.upjv.geoevent.domain.data.DataCallback;
 import fr.upjv.geoevent.domain.models.Evenement;
-import fr.upjv.geoevent.domain.repository.EvenementRepository;
 import fr.upjv.geoevent.ui.adapters.EventAdapter;
+import fr.upjv.geoevent.ui.viewmodels.EventViewModel;
 
 public class ListFragment extends Fragment {
 
-    private RecyclerView recyclerView;
     private EventAdapter adapter;
-    private EvenementRepository repository;
-    private List<Evenement> eventList = new ArrayList<>();
+    private EventViewModel viewModel;
+    private List<Evenement> allEvents = new ArrayList<>();
+    private int currentRadius = 10;
 
-    public ListFragment() {}
-
+    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_list, container, false);
-    }
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_list, container, false);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-
-        repository = new EvenementRepository();
-
-        recyclerView = view.findViewById(R.id.recyclerEvents);
+        RecyclerView recyclerView = view.findViewById(R.id.recyclerEvents);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        adapter = new EventAdapter(eventList, getContext());
+        adapter = new EventAdapter(new ArrayList<>(), getContext());
         recyclerView.setAdapter(adapter);
 
-        loadEvents();
+        // Initialisation ViewModel Partagé
+        viewModel = new ViewModelProvider(requireActivity()).get(EventViewModel.class);
+
+        // Observer les événements
+        viewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
+            this.allEvents = events;
+            filtrerEtAfficher();
+        });
+
+        // Observer le rayon (mis à jour par le MapFragment)
+        viewModel.getRadius().observe(getViewLifecycleOwner(), radius -> {
+            this.currentRadius = radius;
+            filtrerEtAfficher();
+        });
+
+        return view;
     }
 
-    private void loadEvents() {
-        repository.getEvents(new DataCallback() {
-            @Override
-            public void onSuccess(Object data) {
-                com.google.firebase.firestore.QuerySnapshot snapshot =
-                        (com.google.firebase.firestore.QuerySnapshot) data;
+    private void filtrerEtAfficher() {
+        Location userLoc = recupererDernierePositionConnue();
+        List<Evenement> filtered = new ArrayList<>();
 
-                List<Evenement> loadedEvents = snapshot.toObjects(Evenement.class);
+        for (Evenement event : allEvents) {
+            if (userLoc != null) {
+                float[] results = new float[1];
+                Location.distanceBetween(
+                        userLoc.getLatitude(), userLoc.getLongitude(),
+                        event.getLatitude(), event.getLongitude(),
+                        results
+                );
+                float dist = results[0] / 1000f;
 
-                eventList.clear();
-                eventList.addAll(loadedEvents);
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(),
-                            "Erreur : " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                if (dist <= currentRadius) {
+                    event.setDistance(dist);
+                    filtered.add(event);
                 }
+            } else {
+                event.setDistance(0);
+                filtered.add(event);
             }
-        });
+        }
+
+        // 2. TRI DE LA LISTE PAR DISTANCE (Croissant)
+        if (userLoc != null) {
+            Collections.sort(filtered, (e1, e2) -> Float.compare(e1.getDistance(), e2.getDistance()));
+        }
+
+        if (adapter != null) {
+            adapter.updateList(filtered);
+        }
+    }
+
+    @Nullable
+    private Location recupererDernierePositionConnue() {
+        Context context = getContext();
+        if (context == null || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return null;
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        Location gps = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location net = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if (gps != null && net != null) return gps.getTime() > net.getTime() ? gps : net;
+        return (gps != null) ? gps : net;
     }
 }

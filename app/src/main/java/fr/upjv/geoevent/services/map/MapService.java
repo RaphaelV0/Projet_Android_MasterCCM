@@ -37,6 +37,12 @@ public interface MapService {
      */
     void addMarker(double latitude, double longitude, String title);
 
+
+    /**
+     * Supprime tous les marqueurs et tracés de la carte.
+     */
+    void clear();
+
     /**
      * Libère les ressources utilisées par le service cartographique.
      */
