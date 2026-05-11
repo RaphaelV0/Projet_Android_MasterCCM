@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation(libs.firebase.messaging)
+    implementation(libs.google.firebase.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
