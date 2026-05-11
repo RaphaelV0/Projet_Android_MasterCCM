@@ -56,4 +56,6 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+    implementation ("com.google.firebase:firebase-storage")
+    implementation("com.github.bumptech.glide:glide:4.15.1")
 }

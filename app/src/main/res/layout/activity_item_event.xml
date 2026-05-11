@@ -64,6 +64,16 @@
                 android:textColor="#FF0000"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/participantsEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alpha="0.8"
+                android:text="0 participants"
+                android:drawableStart="@android:drawable/btn_star_big_on"
+                android:drawablePadding="4dp"
+                android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

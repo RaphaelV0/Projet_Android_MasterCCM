@@ -32,14 +32,14 @@ public class TestActivity extends AppCompatActivity {
         Evenement event3 = new Evenement("Allons à l'expo !! ", "Là c'est une blague", "Musée des Beaux-Arts Antoine Lécuyer, 28 Rue Antoine Lécuyer, 02100 Saint-Quentin", madate);
 
 
-        event.setPosition(49.848736, 3.294313);
-        event2.setPosition(49.8376020, 3.3051780);
-        event3.setPosition(49.8500072, 3.2814713);
+       // event.setPosition(49.848736, 3.294313);
+        //event2.setPosition(49.8376020, 3.3051780);
+        //event3.setPosition(49.8500072, 3.2814713);
 
 
         //repository.createEvent(event);
         //repository.createEvent(event2);
-        repository.createEvent(event3);
+        //repository.createEvent(event3);
         // Récupération des événements (exemple)
 
 
