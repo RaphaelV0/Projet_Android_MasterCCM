@@ -27,11 +27,19 @@ import java.util.Map;
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 
+/**
+ * Fragment affichant le détail d'un événement sélectionné dans la liste.
+ * Permet à l'utilisateur authentifié de s'inscrire ou se désinscrire de l'événement.
+ * Le compteur de participants dans Firestore est mis à jour en conséquence.
+ */
 public class EventDetailFragment extends Fragment {
 
     private TextView titreEvent, dateEvent, lieuEvent, descriptionEvent;
     private MaterialButton btnRegister;
+
+    /** L'événement dont on affiche le détail, transmis par les arguments du fragment. */
     private Evenement currentEvent;
+
     private FirebaseFirestore db;
     private FirebaseAuth auth;
 
@@ -68,6 +76,10 @@ public class EventDetailFragment extends Fragment {
         btnBack.setOnClickListener(v -> Navigation.findNavController(v).navigateUp());
     }
 
+    /**
+     * Remplit les champs textuels de la vue avec les informations de l'événement courant.
+     * La date est formatée en français (ex : "12 juin 2025 à 14:30").
+     */
     private void displayEventDetails() {
         titreEvent.setText(currentEvent.getTitre());
         lieuEvent.setText(currentEvent.getLieu());
@@ -79,10 +91,14 @@ public class EventDetailFragment extends Fragment {
         }
     }
 
+    /**
+     * Vérifie dans Firestore si l'utilisateur courant est déjà inscrit à cet événement.
+     * L'identifiant d'inscription est construit à partir du titre de l'événement et de l'UID Firebase.
+     * Selon le résultat, le bouton affiche "S'inscrire" ou "Se désinscrire".
+     */
     private void checkRegistrationStatus() {
         if (auth.getCurrentUser() == null) return;
 
-        // ID unique d'inscription pour vérifier si l'utilisateur est déjà inscrit
         String registrationId = currentEvent.getTitre() + "_" + auth.getUid();
 
         db.collection("inscriptionevent").document(registrationId)
@@ -98,6 +114,12 @@ public class EventDetailFragment extends Fragment {
                 });
     }
 
+    /**
+     * Inscrit l'utilisateur courant à l'événement.
+     * Crée un document dans la collection "inscriptionevent" avec ses informations
+     * (UID, prénom, nom, date d'inscription), puis incrémente le compteur de participants
+     * dans la collection "events".
+     */
     private void inscrire() {
         if (auth.getCurrentUser() == null) return;
         btnRegister.setEnabled(false);
@@ -114,16 +136,19 @@ public class EventDetailFragment extends Fragment {
             reg.put("lastName", userDoc.getString("lastName"));
             reg.put("dateInscription", FieldValue.serverTimestamp());
 
-            // 1. On crée l'inscription
             db.collection("inscriptionevent").document(registrationId).set(reg)
                     .addOnSuccessListener(aVoid -> {
-                        // 2. On met à jour le compteur dans la collection "events"
                         updateCounter(eventTitre, 1, "Inscription réussie");
                     })
                     .addOnFailureListener(e -> btnRegister.setEnabled(true));
         });
     }
 
+    /**
+     * Désinscrit l'utilisateur courant de l'événement.
+     * Supprime le document correspondant dans "inscriptionevent",
+     * puis décrémente le compteur de participants dans la collection "events".
+     */
     private void desinscrire() {
         if (auth.getCurrentUser() == null) return;
         btnRegister.setEnabled(false);
@@ -131,27 +156,31 @@ public class EventDetailFragment extends Fragment {
         String eventTitre = currentEvent.getTitre();
         String registrationId = eventTitre + "_" + auth.getUid();
 
-        // 1. On supprime l'inscription
         db.collection("inscriptionevent").document(registrationId).delete()
                 .addOnSuccessListener(aVoid -> {
-                    // 2. On décrémente le compteur
                     updateCounter(eventTitre, -1, "Désinscription réussie");
                 })
                 .addOnFailureListener(e -> btnRegister.setEnabled(true));
     }
 
+    /**
+     * Met à jour le compteur de participants d'un événement dans Firestore.
+     * Recherche d'abord le document événement par son titre, puis applique
+     * un incrément (positif ou négatif) sur le champ "nombreParticipant".
+     * Navigue vers l'écran précédent une fois la mise à jour effectuée.
+     *
+     * @param eventTitre Le titre de l'événement à mettre à jour.
+     * @param value      La valeur à ajouter au compteur (+1 pour inscription, -1 pour désinscription).
+     * @param message    Le message toast à afficher après la mise à jour.
+     */
     private void updateCounter(String eventTitre, int value, String message) {
-        // REQUÊTE : On cherche le document dont le champ "titre" correspond
         db.collection("events")
                 .whereEqualTo("titre", eventTitre)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!queryDocumentSnapshots.isEmpty()) {
-                        // On récupère l'ID réel (ex: MGqX3BB...)
                         String documentId = queryDocumentSnapshots.getDocuments().get(0).getId();
 
-                        // MISE À JOUR DU COMPTEUR
-                        // Important : "nombreParticipant" avec un P majuscule !
                         db.collection("events").document(documentId)
                                 .update("nombreParticipant", FieldValue.increment(value))
                                 .addOnSuccessListener(unused -> {

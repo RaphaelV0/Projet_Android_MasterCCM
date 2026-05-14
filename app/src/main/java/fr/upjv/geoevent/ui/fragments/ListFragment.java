@@ -24,11 +24,21 @@ import fr.upjv.geoevent.domain.models.Evenement;
 import fr.upjv.geoevent.ui.adapters.EventAdapter;
 import fr.upjv.geoevent.ui.viewmodels.EventViewModel;
 
+/**
+ * Fragment affichant la liste des événements filtrés selon la position de l'utilisateur
+ * et le rayon de recherche sélectionné sur la carte.
+ * Il observe le ViewModel partagé pour réagir aux changements d'événements ou de rayon
+ * et met à jour la liste triée par distance croissante.
+ */
 public class ListFragment extends Fragment {
 
     private EventAdapter adapter;
     private EventViewModel viewModel;
+
+    /** Liste complète des événements récupérés depuis Firestore via le ViewModel. */
     private List<Evenement> allEvents = new ArrayList<>();
+
+    /** Rayon de filtrage en kilomètres, synchronisé avec le MapFragment via le ViewModel. */
     private int currentRadius = 10;
 
     @Nullable
@@ -41,16 +51,21 @@ public class ListFragment extends Fragment {
         adapter = new EventAdapter(new ArrayList<>(), getContext());
         recyclerView.setAdapter(adapter);
 
-        // Initialisation ViewModel Partagé
         viewModel = new ViewModelProvider(requireActivity()).get(EventViewModel.class);
 
-        // Observer les événements
+        /**
+         * Observe la liste d'événements exposée par le ViewModel.
+         * À chaque mise à jour, relance le filtrage et le tri pour actualiser l'affichage.
+         */
         viewModel.getEvents().observe(getViewLifecycleOwner(), events -> {
             this.allEvents = events;
             filtrerEtAfficher();
         });
 
-        // Observer le rayon (mis à jour par le MapFragment)
+        /**
+         * Observe le rayon de filtrage mis à jour par le MapFragment.
+         * Tout changement de rayon déclenche un nouveau filtrage de la liste.
+         */
         viewModel.getRadius().observe(getViewLifecycleOwner(), radius -> {
             this.currentRadius = radius;
             filtrerEtAfficher();
@@ -59,6 +74,13 @@ public class ListFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Filtre la liste complète des événements selon le rayon défini et la position de l'utilisateur,
+     * calcule la distance entre l'utilisateur et chaque événement, puis trie les résultats
+     * par distance croissante avant de les transmettre à l'adaptateur.
+     * Si la localisation n'est pas disponible (permission refusée ou GPS absent),
+     * tous les événements sont affichés sans filtrage ni tri.
+     */
     private void filtrerEtAfficher() {
         Location userLoc = recupererDernierePositionConnue();
         List<Evenement> filtered = new ArrayList<>();
@@ -83,7 +105,6 @@ public class ListFragment extends Fragment {
             }
         }
 
-        // 2. TRI DE LA LISTE PAR DISTANCE (Croissant)
         if (userLoc != null) {
             Collections.sort(filtered, (e1, e2) -> Float.compare(e1.getDistance(), e2.getDistance()));
         }
@@ -93,6 +114,14 @@ public class ListFragment extends Fragment {
         }
     }
 
+    /**
+     * Retourne la dernière position connue de l'appareil en comparant les données
+     * du fournisseur GPS et du fournisseur réseau.
+     * Retourne null si la permission de localisation n'est pas accordée
+     * ou si aucune position n'est disponible.
+     *
+     * @return La position la plus récente disponible, ou null.
+     */
     @Nullable
     private Location recupererDernierePositionConnue() {
         Context context = getContext();

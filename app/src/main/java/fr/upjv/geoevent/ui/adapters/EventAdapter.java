@@ -16,15 +16,35 @@ import java.util.Locale;
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 
+/**
+ * Adaptateur RecyclerView responsable de l'affichage de la liste des événements.
+ * Chaque élément de la liste présente le titre, le lieu, la date, la distance
+ * et le nombre de participants d'un événement. Un clic sur un élément navigue
+ * vers le fragment de détail correspondant.
+ */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     private List<Evenement> eventList;
+
+    /** Formateur de date utilisé pour l'affichage uniforme dans chaque carte événement. */
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
+    /**
+     * Constructeur de l'adaptateur.
+     *
+     * @param eventList La liste initiale des événements à afficher.
+     * @param context   Le contexte Android (non utilisé directement mais conservé pour extensibilité).
+     */
     public EventAdapter(List<Evenement> eventList, Context context) {
         this.eventList = eventList;
     }
 
+    /**
+     * Met à jour la liste affichée par l'adaptateur et notifie le RecyclerView
+     * que les données ont changé afin de rafraîchir l'affichage.
+     *
+     * @param newList La nouvelle liste d'événements à afficher.
+     */
     public void updateList(List<Evenement> newList) {
         this.eventList = newList;
         notifyDataSetChanged();
@@ -33,11 +53,18 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Assure-toi que le nom du fichier XML est bien celui-ci
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_item_event, parent, false);
         return new EventViewHolder(view);
     }
 
+    /**
+     * Remplit les vues d'un item de la liste avec les données de l'événement correspondant.
+     * Affiche la distance si elle est renseignée, et formate le nombre de participants
+     * en accordant correctement le mot "participant" au singulier ou au pluriel.
+     *
+     * @param holder   Le ViewHolder contenant les vues de l'item.
+     * @param position L'indice de l'événement dans la liste.
+     */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
         Evenement event = eventList.get(position);
@@ -45,17 +72,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.title.setText(event.getTitre());
         holder.location.setText(event.getLieu());
 
-        // Affichage de la date
         if (event.getDateEvenement() != null) {
             holder.date.setText(dateFormat.format(event.getDateEvenement()));
         }
 
-        // Affichage du nombre de participants (nouveauté)
         int nb = event.getNombreParticipant();
         String pLabel = nb > 1 ? " participants" : " participant";
         holder.participants.setText(nb + pLabel);
 
-        // Affichage de la distance
         if (event.getDistance() > 0) {
             holder.distance.setVisibility(View.VISIBLE);
             holder.distance.setText(String.format(Locale.getDefault(), "%.1f km", event.getDistance()));
@@ -63,7 +87,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.distance.setVisibility(View.GONE);
         }
 
-        // Navigation vers le détail
         holder.itemView.setOnClickListener(v -> {
             Bundle bundle = new Bundle();
             bundle.putSerializable("EVENEMENT_EXTRA", event);
@@ -76,6 +99,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         return eventList != null ? eventList.size() : 0;
     }
 
+    /**
+     * ViewHolder représentant les vues d'un seul item événement dans la liste.
+     * Maintient des références directes aux composants UI pour éviter des appels
+     * répétés à findViewById lors du défilement.
+     */
     public static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView title, location, date, distance, participants;
         ImageView image;

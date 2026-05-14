@@ -34,12 +34,17 @@ import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 import fr.upjv.geoevent.domain.repository.EvenementRepository;
 
+/**
+ * Activité permettant à l'utilisateur de créer un nouvel événement.
+ * Elle gère la saisie du titre, de la description, de l'adresse (avec autocomplétion),
+ * de la date/heure, ainsi que le choix d'une image illustrative.
+ */
 public class NewEventActivity extends AppCompatActivity {
 
     private static final int PICK_IMAGE_REQUEST = 1;
+
     ImageView imageEvent;
     TextView DateEventCreate;
-
     AutoCompleteTextView PostalAdresseCreate;
     EditText TitreEventCreate, DescriptionEventCreate;
     MaterialButton CreateEvent;
@@ -48,6 +53,11 @@ public class NewEventActivity extends AppCompatActivity {
     private EvenementRepository evenementRepository;
 
     private int mYear, mMonth, mDay, mHour, mMinute;
+
+    /**
+     * Indique si l'utilisateur a bien sélectionné une date et une heure.
+     * Utilisé lors de la validation du formulaire avant publication.
+     */
     private boolean isDateTimeSelected = false;
 
     @Override
@@ -74,6 +84,11 @@ public class NewEventActivity extends AppCompatActivity {
         setupAddressAutocomplete();
     }
 
+    /**
+     * Configure l'autocomplétion du champ d'adresse postale.
+     * Dès que l'utilisateur saisit au moins 3 caractères, une recherche
+     * d'adresses est lancée via le Geocoder Android.
+     */
     private void setupAddressAutocomplete() {
         PostalAdresseCreate.addTextChangedListener(new TextWatcher() {
             @Override
@@ -91,6 +106,13 @@ public class NewEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Interroge le Geocoder Android pour obtenir une liste de suggestions
+     * d'adresses correspondant à la saisie de l'utilisateur.
+     * Les résultats sont affichés dans le menu déroulant du champ d'adresse.
+     *
+     * @param query Le texte saisi par l'utilisateur dans le champ d'adresse.
+     */
     private void searchAddresses(String query) {
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
@@ -113,6 +135,10 @@ public class NewEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Récupère l'URI de l'image choisie dans la galerie et l'affiche
+     * dans le composant ImageView prévu à cet effet.
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -122,6 +148,10 @@ public class NewEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Affiche un DatePickerDialog permettant à l'utilisateur de sélectionner
+     * la date de l'événement. À la confirmation, ouvre le sélecteur d'heure.
+     */
     private void showDateTimePicker() {
         final Calendar c = Calendar.getInstance();
         mYear = c.get(Calendar.YEAR);
@@ -137,6 +167,11 @@ public class NewEventActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
+    /**
+     * Affiche un TimePickerDialog permettant à l'utilisateur de sélectionner
+     * l'heure de l'événement. À la confirmation, met à jour l'affichage
+     * de la date/heure dans le champ prévu et active le flag isDateTimeSelected.
+     */
     private void showTimePicker() {
         final Calendar c = Calendar.getInstance();
         mHour = c.get(Calendar.HOUR_OF_DAY);
@@ -155,6 +190,13 @@ public class NewEventActivity extends AppCompatActivity {
         timePickerDialog.show();
     }
 
+    /**
+     * Appelée lors du clic sur le bouton "Publier".
+     * Valide les champs du formulaire, géocode l'adresse saisie pour obtenir
+     * les coordonnées GPS, crée un objet Evenement et le sauvegarde via le repository.
+     *
+     * @param view La vue ayant déclenché l'événement (le bouton "Publier").
+     */
     public void OnClicKPublish(View view) {
         String titre = TitreEventCreate.getText().toString().trim();
         String lieuSaisie = PostalAdresseCreate.getText().toString().trim();
