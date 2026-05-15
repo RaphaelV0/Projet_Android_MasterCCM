@@ -57,4 +57,37 @@ public interface MapService {
      * Méthode appelée lors de la pause de l'activité/fragment.
      */
     void onPause();
+
+
+
+    //Méthode pour afficher l'itineraire sur la carte
+
+    // --- Tracé d'itinéraire via OSRM ---
+    /**
+     * Définit un callback déclenché au clic sur un marqueur.
+     * @param listener reçoit le titre du marqueur cliqué
+     */
+    void setOnMarkerClickListener(OnMarkerClickListener listener);
+
+    /**
+     * Trace un itinéraire routier entre deux points via l'API OSRM (offline-friendly).
+     */
+    void drawRoute(double fromLat, double fromLng, double toLat, double toLng, RouteCallback callback);
+
+    /**
+     * Supprime le tracé d'itinéraire de la carte.
+     */
+    void clearRoute();
+
+    interface OnMarkerClickListener {
+        void onMarkerClick(String markerTitle, double lat, double lng);
+    }
+
+    interface RouteCallback {
+        void onSuccess(double distanceKm, long durationMinutes);
+        void onError(String message);
+    }
+
+
+
 }

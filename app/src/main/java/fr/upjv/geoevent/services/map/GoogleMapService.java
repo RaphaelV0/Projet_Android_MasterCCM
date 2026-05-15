@@ -50,4 +50,19 @@ public class GoogleMapService implements MapService {
     public void onPause() {
         // TODO: Gérer onPause
     }
+
+    @Override
+    public void setOnMarkerClickListener(OnMarkerClickListener listener) {
+
+    }
+
+    @Override
+    public void drawRoute(double fromLat, double fromLng, double toLat, double toLng, RouteCallback callback) {
+
+    }
+
+    @Override
+    public void clearRoute() {
+
+    }
 }
