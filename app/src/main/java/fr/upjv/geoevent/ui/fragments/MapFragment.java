@@ -43,6 +43,7 @@ import fr.upjv.geoevent.services.map.MapService;
 import fr.upjv.geoevent.services.map.MapServiceFactory;
 import fr.upjv.geoevent.ui.activities.NewEventActivity;
 import fr.upjv.geoevent.ui.viewmodels.EventViewModel;
+import fr.upjv.geoevent.services.map.MapConfig;
 
 public class MapFragment extends Fragment {
 
@@ -87,7 +88,7 @@ public class MapFragment extends Fragment {
 
         // 2. Configuration du Service de Carte
         FrameLayout mapContainer = view.findViewById(R.id.map_container);
-        mapService = MapServiceFactory.create(MapProviderType.OPEN_STREET_MAP, requireContext());
+        mapService = MapServiceFactory.create(MapConfig.CURRENT_PROVIDER, requireContext());
         mapService.initialize(requireContext(), mapContainer);
 
 
