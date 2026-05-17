@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
@@ -85,6 +86,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.distance.setText(String.format(Locale.getDefault(), "%.1f km", event.getDistance()));
         } else {
             holder.distance.setVisibility(View.GONE);
+        }
+
+
+        if (event.getImages() != null && !event.getImages().isEmpty() && event.getImages().get(0) != null) {
+            String urlImage = event.getImages().get(0);
+
+            // Chargement asynchrone optimisé de l'image distante via la bibliothèque Glide
+            Glide.with(holder.itemView.getContext())
+                    .load(urlImage)
+                    .placeholder(android.R.drawable.ic_menu_gallery) // Image de substitution en attente du réseau
+                    .error(android.R.drawable.ic_menu_report_image)    // Image d'erreur en cas de lien brisé
+                    .into(holder.image);
+        } else {
+            // Image par défaut si aucune illustration n'est liée à l'événement (Sécurité de recyclage)
+            holder.image.setImageResource(android.R.drawable.ic_menu_gallery);
         }
 
         holder.itemView.setOnClickListener(v -> {
