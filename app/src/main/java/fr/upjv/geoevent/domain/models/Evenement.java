@@ -13,7 +13,7 @@ public class Evenement implements Serializable {
     private String lieu;
     private double longitude;
     private double latitude;
-    private List<Image> images;
+    private List<String> images; // Changed from List<Image> to List<String>
     private int nombreParticipant;
     private Date dateEvenement;
 
@@ -64,8 +64,8 @@ public class Evenement implements Serializable {
         this.longitude = longitude;
     }
 
-    public List<Image> getImages() { return images; }
-    public void setImages(List<Image> images) { this.images = images; }
+    public List<String> getImages() { return images; }
+    public void setImages(List<String> images) { this.images = images; }
 
     public int getNombreParticipant() { return nombreParticipant; }
     public void setNombreParticipant(int nombreParticipant) { this.nombreParticipant = nombreParticipant; }
