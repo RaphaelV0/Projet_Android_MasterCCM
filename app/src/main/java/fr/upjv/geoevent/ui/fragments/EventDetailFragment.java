@@ -6,40 +6,35 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
-
+import com.bumptech.glide.Glide; // Bibliothèque asynchrone de chargement d'images distantes
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 
 /**
- * Fragment affichant le détail d'un événement sélectionné dans la liste.
- * Permet à l'utilisateur authentifié de s'inscrire ou se désinscrire de l'événement.
- * Le compteur de participants dans Firestore est mis à jour en conséquence.
+ * Fragment gérant la fiche descriptive d'un événement.
+ * Intègre le chargement réseau de l'image de couverture via Glide et pilote les inscriptions.
  */
 public class EventDetailFragment extends Fragment {
 
     private TextView titreEvent, dateEvent, lieuEvent, descriptionEvent;
     private MaterialButton btnRegister;
-
-    /** L'événement dont on affiche le détail, transmis par les arguments du fragment. */
+    private ImageView imageEventDetail;
     private Evenement currentEvent;
-
     private FirebaseFirestore db;
     private FirebaseAuth auth;
 
@@ -62,24 +57,38 @@ public class EventDetailFragment extends Fragment {
         lieuEvent = view.findViewById(R.id.LieuEvent);
         descriptionEvent = view.findViewById(R.id.DescriptionEvent);
         btnRegister = view.findViewById(R.id.RegisterEvent);
+        imageEventDetail = view.findViewById(R.id.ImageEventDetail);
         ImageButton btnBack = view.findViewById(R.id.btnBack);
 
         if (getArguments() != null) {
             currentEvent = (Evenement) getArguments().getSerializable("EVENEMENT_EXTRA");
         }
 
+        // Si le transfert de données est validé, affichage des informations et gestion de l'image distante
         if (currentEvent != null) {
             displayEventDetails();
             checkRegistrationStatus();
+
+            if (currentEvent.getImages() != null && !currentEvent.getImages().isEmpty() && currentEvent.getImages().get(0) != null) {
+                String urlImage = currentEvent.getImages().get(0); // Récupération directe de la String URL
+
+                // Traitement d'affichage asynchrone fluide découplé du thread principal (Main Thread)
+                Glide.with(this)
+                        .load(urlImage)
+                        .placeholder(android.R.drawable.ic_menu_gallery) // Image d'attente pendant la requête réseau
+                        .error(android.R.drawable.ic_menu_report_image)    // Visuel de secours en cas de lien mort
+                        .centerCrop()                                     // Ajustement géométrique proportionnel
+                        .into(imageEventDetail);
+            } else {
+                // Initialisation par défaut si l'événement ne comporte aucun média illustratif
+                imageEventDetail.setImageResource(android.R.drawable.ic_menu_gallery);
+            }
         }
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(v).navigateUp());
     }
 
-    /**
-     * Remplit les champs textuels de la vue avec les informations de l'événement courant.
-     * La date est formatée en français (ex : "12 juin 2025 à 14:30").
-     */
+    /** Projette les données textuelles de l'événement sur l'interface graphique. */
     private void displayEventDetails() {
         titreEvent.setText(currentEvent.getTitre());
         lieuEvent.setText(currentEvent.getLieu());
@@ -91,11 +100,7 @@ public class EventDetailFragment extends Fragment {
         }
     }
 
-    /**
-     * Vérifie dans Firestore si l'utilisateur courant est déjà inscrit à cet événement.
-     * L'identifiant d'inscription est construit à partir du titre de l'événement et de l'UID Firebase.
-     * Selon le résultat, le bouton affiche "S'inscrire" ou "Se désinscrire".
-     */
+    /** Contrôle l'existence d'une inscription sur Firestore via un ID calculé unique (Titre_UID). */
     private void checkRegistrationStatus() {
         if (auth.getCurrentUser() == null) return;
 
@@ -104,6 +109,7 @@ public class EventDetailFragment extends Fragment {
         db.collection("inscriptionevent").document(registrationId)
                 .get()
                 .addOnSuccessListener(doc -> {
+                    // Mutation d'état réactive du bouton pivot unique
                     if (doc.exists()) {
                         btnRegister.setText("Se désinscrire");
                         btnRegister.setOnClickListener(v -> desinscrire());
@@ -114,15 +120,10 @@ public class EventDetailFragment extends Fragment {
                 });
     }
 
-    /**
-     * Inscrit l'utilisateur courant à l'événement.
-     * Crée un document dans la collection "inscriptionevent" avec ses informations
-     * (UID, prénom, nom, date d'inscription), puis incrémente le compteur de participants
-     * dans la collection "events".
-     */
+    /** Persiste l'inscription en base de données et ordonne l'incrémentation atomique du compteur d'inscrits. */
     private void inscrire() {
         if (auth.getCurrentUser() == null) return;
-        btnRegister.setEnabled(false);
+        btnRegister.setEnabled(false); // Verrouillage immédiat pour bloquer les clics concurrents en cours de traitement
 
         String uid = auth.getUid();
         String eventTitre = currentEvent.getTitre();
@@ -144,14 +145,10 @@ public class EventDetailFragment extends Fragment {
         });
     }
 
-    /**
-     * Désinscrit l'utilisateur courant de l'événement.
-     * Supprime le document correspondant dans "inscriptionevent",
-     * puis décrémente le compteur de participants dans la collection "events".
-     */
+    /** Supprime l'inscription en base de données et ordonne la décrémentation du compteur. */
     private void desinscrire() {
         if (auth.getCurrentUser() == null) return;
-        btnRegister.setEnabled(false);
+        btnRegister.setEnabled(false); // Verrouillage antispam
 
         String eventTitre = currentEvent.getTitre();
         String registrationId = eventTitre + "_" + auth.getUid();
@@ -163,16 +160,7 @@ public class EventDetailFragment extends Fragment {
                 .addOnFailureListener(e -> btnRegister.setEnabled(true));
     }
 
-    /**
-     * Met à jour le compteur de participants d'un événement dans Firestore.
-     * Recherche d'abord le document événement par son titre, puis applique
-     * un incrément (positif ou négatif) sur le champ "nombreParticipant".
-     * Navigue vers l'écran précédent une fois la mise à jour effectuée.
-     *
-     * @param eventTitre Le titre de l'événement à mettre à jour.
-     * @param value      La valeur à ajouter au compteur (+1 pour inscription, -1 pour désinscription).
-     * @param message    Le message toast à afficher après la mise à jour.
-     */
+    /** Applique une modification arithmétique atomique sécurisée sur le compteur de participants Firestore. */
     private void updateCounter(String eventTitre, int value, String message) {
         db.collection("events")
                 .whereEqualTo("titre", eventTitre)
@@ -181,10 +169,13 @@ public class EventDetailFragment extends Fragment {
                     if (!queryDocumentSnapshots.isEmpty()) {
                         String documentId = queryDocumentSnapshots.getDocuments().get(0).getId();
 
+                        // Utilisation de FieldValue.increment pour faire exécuter l'opération mathématique par le cloud (Sans conflits)
                         db.collection("events").document(documentId)
                                 .update("nombreParticipant", FieldValue.increment(value))
                                 .addOnSuccessListener(unused -> {
                                     Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+
+                                    // navigateUp() dépile l'écran actuel de la Backstack et renvoie dynamiquement à l'écran émetteur
                                     Navigation.findNavController(requireView()).navigateUp();
                                 });
                     } else {

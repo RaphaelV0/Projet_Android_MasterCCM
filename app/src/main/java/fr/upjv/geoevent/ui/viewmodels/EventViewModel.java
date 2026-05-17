@@ -7,62 +7,38 @@ import java.util.List;
 import fr.upjv.geoevent.domain.models.Evenement;
 
 /**
- * ViewModel partagé entre le MapFragment et le ListFragment.
- * Centralise et expose deux données réactives via LiveData :
- * la liste complète des événements et le rayon de filtrage en kilomètres.
- * Grâce à l'architecture ViewModel, ces données survivent aux rotations d'écran
- * et sont accessibles depuis plusieurs fragments sans couplage direct entre eux.
+ * ViewModel d'architecture Jetpack. Centralise et préserve l'état de l'application en mémoire cache.
+ * Il survit aux destructions/recréations d'Activités provoquées par les changements de configuration (ex: rotation).
+ * Il applique le principe d'encapsulation en séparant la modification interne (Mutable) de l'exposition externe (Read-Only).
  */
 public class EventViewModel extends ViewModel {
 
-    /**
-     * Rayon de recherche en kilomètres. Valeur par défaut : 10 km.
-     * Mis à jour par le MapFragment lorsque l'utilisateur déplace le curseur de rayon.
-     */
+    // MutableLiveData privé : modifiable uniquement à l'intérieur de cette classe via setValue()
     private final MutableLiveData<Integer> radiusKm = new MutableLiveData<>(10);
-
-    /**
-     * Liste complète des événements chargés depuis Firestore.
-     * Mise à jour par le composant qui récupère les données (ex : MapFragment ou repository).
-     */
     private final MutableLiveData<List<Evenement>> allEvents = new MutableLiveData<>();
 
     /**
-     * Met à jour le rayon de filtrage.
-     * Déclenche automatiquement les observers (notamment dans ListFragment).
-     *
-     * @param radius Le nouveau rayon en kilomètres.
+     * Met à jour la valeur numérique du rayon de recherche.
+     * Déclenche automatiquement les observateurs branchés sur les fragments.
      */
     public void setRadius(int radius) {
         radiusKm.setValue(radius);
     }
 
     /**
-     * Retourne le LiveData exposant le rayon de filtrage courant.
-     * Les fragments peuvent l'observer pour réagir à tout changement.
-     *
-     * @return LiveData contenant le rayon en kilomètres.
+     * Expose le rayon sous la forme d'un LiveData immuable (Read-Only) pour l'UI.
+     * Empêche les fragments d'altérer directement la donnée sans passer par le setter (Encapsulation).
      */
     public LiveData<Integer> getRadius() {
         return radiusKm;
     }
 
-    /**
-     * Met à jour la liste des événements disponibles.
-     * Déclenche automatiquement les observers (notamment dans ListFragment).
-     *
-     * @param events La nouvelle liste d'événements à exposer.
-     */
+    /** Met à jour la collection d'événements issue du flux temps réel Firestore. */
     public void setEvents(List<Evenement> events) {
         allEvents.setValue(events);
     }
 
-    /**
-     * Retourne le LiveData exposant la liste complète des événements.
-     * Les fragments peuvent l'observer pour afficher ou filtrer les données.
-     *
-     * @return LiveData contenant la liste des événements.
-     */
+    /** Expose la collection d'événements sous forme immuable pour les fragments Observateurs. */
     public LiveData<List<Evenement>> getEvents() {
         return allEvents;
     }
