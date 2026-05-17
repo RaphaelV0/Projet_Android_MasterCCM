@@ -17,27 +17,22 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.button.MaterialButton;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 import fr.upjv.geoevent.domain.repository.EvenementRepository;
 
 /**
- * Activité permettant à l'utilisateur de créer un nouvel événement.
- * Elle gère la saisie du titre, de la description, de l'adresse (avec autocomplétion),
- * de la date/heure, ainsi que le choix d'une image illustrative.
+ * Activité contrôlant le formulaire de création d'événement.
+ * Intègre la capture d'images, l'autocomplétion prédictive des adresses et leur géocodage spatial.
  */
 public class NewEventActivity extends AppCompatActivity {
 
@@ -51,13 +46,7 @@ public class NewEventActivity extends AppCompatActivity {
     Uri imageUri;
 
     private EvenementRepository evenementRepository;
-
     private int mYear, mMonth, mDay, mHour, mMinute;
-
-    /**
-     * Indique si l'utilisateur a bien sélectionné une date et une heure.
-     * Utilisé lors de la validation du formulaire avant publication.
-     */
     private boolean isDateTimeSelected = false;
 
     @Override
@@ -74,84 +63,68 @@ public class NewEventActivity extends AppCompatActivity {
         DescriptionEventCreate = findViewById(R.id.DescriptionEventCreate);
         CreateEvent = findViewById(R.id.CreateEvent);
 
+        // Déclenchement d'une intention implicite vers la galerie multimédia du terminal
         imageEvent.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             startActivityForResult(intent, PICK_IMAGE_REQUEST);
         });
 
         DateEventCreate.setOnClickListener(v -> showDateTimePicker());
-
         setupAddressAutocomplete();
     }
 
-    /**
-     * Configure l'autocomplétion du champ d'adresse postale.
-     * Dès que l'utilisateur saisit au moins 3 caractères, une recherche
-     * d'adresses est lancée via le Geocoder Android.
-     */
+    /** Configure un écouteur de texte pour déclencher le Geocoder dès que la saisie atteint 3 caractères. */
     private void setupAddressAutocomplete() {
         PostalAdresseCreate.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() >= 3) {
-                    searchAddresses(s.toString());
+                    searchAddresses(s.toString()); // Requête asynchrone d'arrière-plan
                 }
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
         });
     }
 
-    /**
-     * Interroge le Geocoder Android pour obtenir une liste de suggestions
-     * d'adresses correspondant à la saisie de l'utilisateur.
-     * Les résultats sont affichés dans le menu déroulant du champ d'adresse.
-     *
-     * @param query Le texte saisi par l'utilisateur dans le champ d'adresse.
-     */
+    /** Interroge le moteur de géocodage système pour récupérer des adresses géographiques valides. */
     private void searchAddresses(String query) {
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
+            // Extraction des 5 meilleures correspondances textuelles
             List<Address> addresses = geocoder.getFromLocationName(query, 5);
             List<String> suggestions = new ArrayList<>();
 
             if (addresses != null) {
                 for (Address addr : addresses) {
-                    suggestions.add(addr.getAddressLine(0));
+                    suggestions.add(addr.getAddressLine(0)); // Récupération de la ligne d'adresse formatée
                 }
             }
 
+            // Rafraîchissement dynamique de la liste déroulante d'autocomplétion
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                     android.R.layout.simple_dropdown_item_1line, suggestions);
             PostalAdresseCreate.setAdapter(adapter);
             adapter.notifyDataSetChanged();
 
         } catch (IOException e) {
+            // Interception des pannes de connectivité réseau pour sécuriser l'expérience utilisateur (Robustesse)
             e.printStackTrace();
         }
     }
 
-    /**
-     * Récupère l'URI de l'image choisie dans la galerie et l'affiche
-     * dans le composant ImageView prévu à cet effet.
-     */
+    /** Récupère le pointeur de fichier (Uri) de l'image sélectionnée et l'injecte dans la vue. */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             imageUri = data.getData();
-            imageEvent.setImageURI(imageUri);
+            imageEvent.setImageURI(imageUri); // Affichage de l'image locale en mémoire cache
         }
     }
 
-    /**
-     * Affiche un DatePickerDialog permettant à l'utilisateur de sélectionner
-     * la date de l'événement. À la confirmation, ouvre le sélecteur d'heure.
-     */
+    /** Déploie le dialogue système de sélection de date. */
     private void showDateTimePicker() {
         final Calendar c = Calendar.getInstance();
         mYear = c.get(Calendar.YEAR);
@@ -167,11 +140,7 @@ public class NewEventActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
-    /**
-     * Affiche un TimePickerDialog permettant à l'utilisateur de sélectionner
-     * l'heure de l'événement. À la confirmation, met à jour l'affichage
-     * de la date/heure dans le champ prévu et active le flag isDateTimeSelected.
-     */
+    /** Déploie le dialogue système de sélection de l'heure. */
     private void showTimePicker() {
         final Calendar c = Calendar.getInstance();
         mHour = c.get(Calendar.HOUR_OF_DAY);
@@ -190,18 +159,13 @@ public class NewEventActivity extends AppCompatActivity {
         timePickerDialog.show();
     }
 
-    /**
-     * Appelée lors du clic sur le bouton "Publier".
-     * Valide les champs du formulaire, géocode l'adresse saisie pour obtenir
-     * les coordonnées GPS, crée un objet Evenement et le sauvegarde via le repository.
-     *
-     * @param view La vue ayant déclenché l'événement (le bouton "Publier").
-     */
+    /** Traite la validation finale, géocode l'adresse saisie en points GPS et transmet le modèle au Repository. */
     public void OnClicKPublish(View view) {
         String titre = TitreEventCreate.getText().toString().trim();
         String lieuSaisie = PostalAdresseCreate.getText().toString().trim();
         String description = DescriptionEventCreate.getText().toString().trim();
 
+        // Contrôle de surface obligatoire pour interdire la publication de formulaires incomplets
         if (titre.isEmpty() || !isDateTimeSelected || lieuSaisie.isEmpty() || description.isEmpty()) {
             Toast.makeText(this, "Veuillez remplir tous les champs obligatoires", Toast.LENGTH_LONG).show();
             return;
@@ -211,6 +175,7 @@ public class NewEventActivity extends AppCompatActivity {
         calendar.set(mYear, mMonth, mDay, mHour, mMinute);
         Date dateEvenement = calendar.getTime();
 
+        // Détermination des coordonnées géographiques (Latitude / Longitude) de l'adresse retenue
         double lat = 0.0;
         double lon = 0.0;
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
@@ -228,9 +193,12 @@ public class NewEventActivity extends AppCompatActivity {
         nouvelEvent.setLatitude(lat);
         nouvelEvent.setLongitude(lon);
 
-        evenementRepository.createEvent(nouvelEvent);
+        // Transmission au repository qui orchestrera de manière asynchrone l'envoi de l'image puis de l'événement
+        evenementRepository.createEvent(nouvelEvent, imageUri);
 
         Toast.makeText(this, "Événement " + titre + " publié !", Toast.LENGTH_SHORT).show();
+
+        // Destruction de l'activité pour libérer les ressources système (Gestion du cycle de vie)
         finish();
     }
 }
