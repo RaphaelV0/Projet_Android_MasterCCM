@@ -236,6 +236,21 @@ public class ConnexionActivity extends AppCompatActivity {
      */
     private void subscribeAndNavigate(User user) {
         FirebaseMessaging.getInstance().subscribeToTopic("all_users");
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                String token = task.getResult();
+
+                // On utilise le repository pour mettre à jour l'utilisateur
+                java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                updates.put("fcmToken", token);
+
+                // Mise à jour directe dans Firestore via votre DataService ou Repository
+                fr.upjv.geoevent.domain.data.DataServiceFactory.create()
+                        .update("users", user.getUid(), updates);
+
+                android.util.Log.d("ConnexionActivity", "Jeton FCM mis à jour : " + token);
+            }
+        });
         navigateBasedOnRole(user);
     }
 

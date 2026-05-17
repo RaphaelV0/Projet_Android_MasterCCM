@@ -3,10 +3,13 @@ package fr.upjv.geoevent.ui.activities;
 
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -18,11 +21,20 @@ import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.receivers.BatteryReceiver;
 import fr.upjv.geoevent.receivers.NetworkReceiver;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+
 public class MainActivity extends AppCompatActivity {
 
     // Déclarations
     private NetworkReceiver networkReceiver;
     private BatteryReceiver batteryReceiver;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +73,31 @@ public class MainActivity extends AppCompatActivity {
         });
 
         batteryReceiver = new BatteryReceiver();
+
+        // Initialisation du launcher de permission
+        requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        // Permission accordée !
+                    } else {
+                        // Permission refusée, l'utilisateur ne verra pas les notifs
+                    }
+                }
+        );
+
+        // Demande la permission au démarrage
+        askNotificationPermission();
+    }
+
+    private void askNotificationPermission() {
+        // La permission n'est nécessaire qu'à partir d'Android 13 (Tiramisu)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
     }
 
     @Override
