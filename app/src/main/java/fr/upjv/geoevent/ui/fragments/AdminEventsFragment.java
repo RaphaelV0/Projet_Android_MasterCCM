@@ -23,31 +23,36 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.data.DataCallback;
+import fr.upjv.geoevent.domain.data.DataServiceFactory;
 import fr.upjv.geoevent.domain.models.Evenement;
 import fr.upjv.geoevent.domain.repository.EvenementRepository;
 import fr.upjv.geoevent.ui.adapters.AdminEventAdapter;
 
 /**
  * Fragment de gestion des événements pour l'administrateur.
- * Fonctionnalités : liste, recherche, tri, création, modification, suppression.
+ *
+ * Corrections appliquées :
+ * - Le docId est transmis directement au callback onEdit/onDelete via la Map interne
+ *   de l'adapter → plus de désynchronisation avec filtrage/tri.
+ * - La mise à jour utilise un Map<String, Object> avec uniquement les champs modifiés
+ *   → la description est désormais correctement sauvegardée dans Firestore.
  */
 public class AdminEventsFragment extends Fragment implements AdminEventAdapter.OnEventActionListener {
 
     private AdminEventAdapter adapter;
     private EvenementRepository repository;
-    private List<Evenement> allEvents = new ArrayList<>();
-    private List<DocumentSnapshot> eventDocuments = new ArrayList<>();
 
     private TextInputEditText searchInput;
     private Spinner sortSpinner;
@@ -64,8 +69,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_admin_events, container, false);
 
-        repository = new EvenementRepository();
-
+        repository   = new EvenementRepository();
         searchInput  = view.findViewById(R.id.adminSearchInput);
         sortSpinner  = view.findViewById(R.id.adminSortSpinner);
         emptyStateText = view.findViewById(R.id.adminEmptyState);
@@ -79,10 +83,9 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         setupSort();
 
         FloatingActionButton fabAdd = view.findViewById(R.id.fabAdminAddEvent);
-        fabAdd.setOnClickListener(v -> showCreateDialog());
+        fabAdd.setOnClickListener(v -> showEventDialog(null, null));
 
         loadEvents();
-
         return view;
     }
 
@@ -94,9 +97,12 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                 getActivity().runOnUiThread(() -> {
                     if (data instanceof QuerySnapshot) {
                         QuerySnapshot qs = (QuerySnapshot) data;
-                        allEvents = qs.toObjects(Evenement.class);
-                        eventDocuments = new ArrayList<>(qs.getDocuments());
-                        adapter.setData(allEvents);
+                        List<Evenement> events = qs.toObjects(Evenement.class);
+                        List<String> docIds = new ArrayList<>();
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : qs.getDocuments()) {
+                            docIds.add(doc.getId());
+                        }
+                        adapter.setData(events, docIds);
                         updateEmptyState();
                     }
                 });
@@ -105,8 +111,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
             public void onError(Exception e) {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "Erreur chargement : " + e.getMessage(),
-                                    Toast.LENGTH_SHORT).show());
+                            Toast.makeText(getContext(), "Erreur : " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 }
             }
         });
@@ -130,7 +135,6 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                 android.R.layout.simple_spinner_item, options);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sortSpinner.setAdapter(spinnerAdapter);
-
         sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -148,48 +152,32 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         emptyStateText.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 
+    // ===== Callbacks de l'adapter — docId transmis directement =====
+
     @Override
-    public void onEdit(Evenement event, int position) {
-        String docId = (position < eventDocuments.size())
-                ? eventDocuments.get(position).getId() : null;
-        if (docId == null) {
-            Toast.makeText(getContext(), "Impossible d'identifier l'événement.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        showEditDialog(event, docId);
+    public void onEdit(Evenement event, String docId) {
+        showEventDialog(event, docId);
     }
 
     @Override
-    public void onDelete(Evenement event, int position) {
-        String docId = (position < eventDocuments.size())
-                ? eventDocuments.get(position).getId() : null;
-        if (docId == null) return;
-
+    public void onDelete(Evenement event, String docId) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Supprimer l'événement")
                 .setMessage("Voulez-vous vraiment supprimer « " + event.getTitre() + " » ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
                     repository.deleteEvent(docId);
-                    allEvents.remove(position);
-                    eventDocuments.remove(position);
-                    adapter.setData(allEvents);
-                    updateEmptyState();
+                    loadEvents(); // Rechargement complet pour rester en sync
                     Toast.makeText(getContext(), "Événement supprimé", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
     }
 
-    private void showCreateDialog() {
-        showEventDialog(null, null);
-    }
-
-    private void showEditDialog(Evenement event, String docId) {
-        showEventDialog(event, docId);
-    }
+    // ===== Dialogue de création / modification =====
 
     private void showEventDialog(@Nullable Evenement event, @Nullable String docId) {
         boolean isEdit = event != null;
+        editDateSelected = false;
 
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_edit_event, null);
@@ -206,10 +194,10 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
             if (event.getDateEvenement() != null) {
                 Calendar c = Calendar.getInstance();
                 c.setTime(event.getDateEvenement());
-                editYear  = c.get(Calendar.YEAR);
+                editYear = c.get(Calendar.YEAR);
                 editMonth = c.get(Calendar.MONTH);
-                editDay   = c.get(Calendar.DAY_OF_MONTH);
-                editHour  = c.get(Calendar.HOUR_OF_DAY);
+                editDay = c.get(Calendar.DAY_OF_MONTH);
+                editHour = c.get(Calendar.HOUR_OF_DAY);
                 editMinute = c.get(Calendar.MINUTE);
                 editDateSelected = true;
                 updateEditDateDisplay();
@@ -218,7 +206,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
 
         editDateDisplay.setOnClickListener(v -> showEditDatePicker());
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle(isEdit ? "Modifier l'événement" : "Créer un événement")
                 .setView(dialogView)
                 .setPositiveButton(isEdit ? "Enregistrer" : "Créer", (dialog, which) -> {
@@ -231,31 +219,40 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                         return;
                     }
 
-                    Date dateEvenement = null;
-                    if (editDateSelected) {
-                        Calendar c = Calendar.getInstance();
-                        c.set(editYear, editMonth, editDay, editHour, editMinute, 0);
-                        dateEvenement = c.getTime();
-                    }
-
                     if (isEdit) {
-                        event.setTitre(titre);
-                        event.setDescription(desc);
-                        event.setLieu(lieu);
-                        if (dateEvenement != null) event.setDateEvenement(dateEvenement);
-                        repository.updateEvent(docId, event);
-                        adapter.setData(allEvents);
+                        // ✅ FIX description : on utilise un Map plutôt que le POJO complet.
+                        // SetOptions.merge() + POJO peut ignorer les champs selon la sérialisation
+                        // Firestore. Avec un Map explicite, chaque champ est garanti d'être envoyé.
+                        Map<String, Object> patch = new HashMap<>();
+                        patch.put("titre", titre);
+                        patch.put("description", desc);
+                        patch.put("lieu", lieu);
+
+                        if (editDateSelected) {
+                            Calendar c = Calendar.getInstance();
+                            c.set(editYear, editMonth, editDay, editHour, editMinute, 0);
+                            patch.put("dateEvenement", c.getTime());
+                        }
+
+                        DataServiceFactory.create().update("events", docId, patch);
                         Toast.makeText(getContext(), "Événement mis à jour", Toast.LENGTH_SHORT).show();
+
                     } else {
-                        Evenement nouvel = new Evenement(titre, desc, lieu, dateEvenement);
-                        repository.createEvent(nouvel);
-                        loadEvents();
+                        Date dateEvenement = null;
+                        if (editDateSelected) {
+                            Calendar c = Calendar.getInstance();
+                            c.set(editYear, editMonth, editDay, editHour, editMinute, 0);
+                            dateEvenement = c.getTime();
+                        }
+                        repository.createEvent(new Evenement(titre, desc, lieu, dateEvenement));
                         Toast.makeText(getContext(), "Événement créé", Toast.LENGTH_SHORT).show();
                     }
-                })
-                .setNegativeButton("Annuler", null);
 
-        builder.create().show();
+                    loadEvents(); // Rafraîchissement systématique après toute modification
+                })
+                .setNegativeButton("Annuler", null)
+                .create()
+                .show();
     }
 
     private void showEditDatePicker() {

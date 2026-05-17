@@ -29,8 +29,11 @@ import fr.upjv.geoevent.services.FcmNotificationService;
 import fr.upjv.geoevent.services.INotificationService;
 
 /**
- * Fragment d'envoi de notifications push depuis le panneau admin.
- * Deux cibles disponibles : tous les utilisateurs, ou les inscrits d'un événement.
+ * Fragment d'envoi de notifications push.
+ *
+ * Correction : pour cibler les inscrits d'un événement, on passe le TITRE de l'événement
+ * (pas son docId) car la collection "inscriptionevent" est indexée sur "eventTitre".
+ * La Cloud Function "sendToEventSubscribers" fait la jointure elle-même.
  */
 public class AdminNotificationsFragment extends Fragment {
 
@@ -45,8 +48,7 @@ public class AdminNotificationsFragment extends Fragment {
     private MaterialButton sendButton;
     private View loadingIndicator;
 
-    private final List<Evenement> events = new ArrayList<>();
-    private final List<String>    eventIds = new ArrayList<>();
+    private final List<Evenement> events   = new ArrayList<>();
     private int selectedEventPosition = 0;
 
     @Nullable
@@ -58,13 +60,13 @@ public class AdminNotificationsFragment extends Fragment {
         notificationService = new FcmNotificationService();
         repository          = new EvenementRepository();
 
-        notifTitleInput      = view.findViewById(R.id.notifTitleInput);
-        notifBodyInput       = view.findViewById(R.id.notifBodyInput);
-        targetRadioGroup     = view.findViewById(R.id.targetRadioGroup);
+        notifTitleInput       = view.findViewById(R.id.notifTitleInput);
+        notifBodyInput        = view.findViewById(R.id.notifBodyInput);
+        targetRadioGroup      = view.findViewById(R.id.targetRadioGroup);
         eventSpinnerContainer = view.findViewById(R.id.eventSpinnerContainer);
-        eventSpinner         = view.findViewById(R.id.eventSpinner);
-        sendButton           = view.findViewById(R.id.sendNotifButton);
-        loadingIndicator     = view.findViewById(R.id.notifLoading);
+        eventSpinner          = view.findViewById(R.id.eventSpinner);
+        sendButton            = view.findViewById(R.id.sendNotifButton);
+        loadingIndicator      = view.findViewById(R.id.notifLoading);
 
         setupTargetToggle();
         loadEventsForSpinner();
@@ -74,13 +76,9 @@ public class AdminNotificationsFragment extends Fragment {
     }
 
     private void setupTargetToggle() {
-        targetRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radioAllUsers) {
-                eventSpinnerContainer.setVisibility(View.GONE);
-            } else if (checkedId == R.id.radioSpecificEvent) {
-                eventSpinnerContainer.setVisibility(View.VISIBLE);
-            }
-        });
+        targetRadioGroup.setOnCheckedChangeListener((group, checkedId) ->
+                eventSpinnerContainer.setVisibility(
+                        checkedId == R.id.radioSpecificEvent ? View.VISIBLE : View.GONE));
     }
 
     private void loadEventsForSpinner() {
@@ -90,14 +88,8 @@ public class AdminNotificationsFragment extends Fragment {
                 if (getActivity() == null) return;
                 getActivity().runOnUiThread(() -> {
                     if (data instanceof QuerySnapshot) {
-                        QuerySnapshot qs = (QuerySnapshot) data;
                         events.clear();
-                        eventIds.clear();
-                        events.addAll(qs.toObjects(Evenement.class));
-                        List<String> docs = new ArrayList<>();
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : qs.getDocuments()) {
-                            eventIds.add(doc.getId());
-                        }
+                        events.addAll(((QuerySnapshot) data).toObjects(Evenement.class));
 
                         List<String> titles = new ArrayList<>();
                         for (Evenement e : events) {
@@ -111,16 +103,15 @@ public class AdminNotificationsFragment extends Fragment {
 
                         eventSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                             @Override
-                            public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
-                                selectedEventPosition = position;
+                            public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
+                                selectedEventPosition = pos;
                             }
                             @Override public void onNothingSelected(AdapterView<?> parent) {}
                         });
                     }
                 });
             }
-            @Override
-            public void onError(Exception e) {}
+            @Override public void onError(Exception e) {}
         });
     }
 
@@ -128,37 +119,29 @@ public class AdminNotificationsFragment extends Fragment {
         String title = notifTitleInput.getText() != null ? notifTitleInput.getText().toString().trim() : "";
         String body  = notifBodyInput.getText()  != null ? notifBodyInput.getText().toString().trim()  : "";
 
-        if (title.isEmpty()) {
-            notifTitleInput.setError("Titre requis");
-            return;
-        }
-        if (body.isEmpty()) {
-            notifBodyInput.setError("Message requis");
-            return;
-        }
+        if (title.isEmpty()) { notifTitleInput.setError("Titre requis"); return; }
+        if (body.isEmpty())  { notifBodyInput.setError("Message requis"); return; }
 
         setLoading(true);
 
         INotificationService.NotificationCallback callback = new INotificationService.NotificationCallback() {
             @Override
             public void onSuccess() {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        setLoading(false);
-                        notifTitleInput.setText("");
-                        notifBodyInput.setText("");
-                        Toast.makeText(getContext(), "✓ Notification envoyée avec succès !", Toast.LENGTH_LONG).show();
-                    });
-                }
+                if (getActivity() == null) return;
+                getActivity().runOnUiThread(() -> {
+                    setLoading(false);
+                    notifTitleInput.setText("");
+                    notifBodyInput.setText("");
+                    Toast.makeText(getContext(), "✓ Notification envoyée !", Toast.LENGTH_LONG).show();
+                });
             }
             @Override
             public void onFailure(String error) {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        setLoading(false);
-                        Toast.makeText(getContext(), "Erreur : " + error, Toast.LENGTH_LONG).show();
-                    });
-                }
+                if (getActivity() == null) return;
+                getActivity().runOnUiThread(() -> {
+                    setLoading(false);
+                    Toast.makeText(getContext(), "Erreur : " + error, Toast.LENGTH_LONG).show();
+                });
             }
         };
 
@@ -166,15 +149,21 @@ public class AdminNotificationsFragment extends Fragment {
 
         if (checkedId == R.id.radioAllUsers) {
             notificationService.sendToAllUsers(title, body, callback);
+
         } else if (checkedId == R.id.radioSpecificEvent) {
-            if (eventIds.isEmpty()) {
+            if (events.isEmpty()) {
                 setLoading(false);
                 Toast.makeText(getContext(), "Aucun événement disponible.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            String eventId = eventIds.get(selectedEventPosition);
-            String eventTitle = events.get(selectedEventPosition).getTitre();
-            notificationService.sendToEventSubscribers(eventId, title, body, callback);
+            // On passe le TITRE — c'est la clé utilisée dans la collection inscriptionevent
+            String eventTitre = events.get(selectedEventPosition).getTitre();
+            if (eventTitre == null || eventTitre.isEmpty()) {
+                setLoading(false);
+                Toast.makeText(getContext(), "Cet événement n'a pas de titre.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            notificationService.sendToEventSubscribers(eventTitre, title, body, callback);
         }
     }
 
