@@ -82,5 +82,5 @@ Le code source est organisé de manière modulaire sous `fr.upjv.geoevent` :
 
 * **Verchain Raphaël**
 * **Poncey--Valdemar Jayson**
-* **Youkou Ngongang Brice**
+* **Youkoua Ngongang Brice**
 * **Suamunu Miriam**
