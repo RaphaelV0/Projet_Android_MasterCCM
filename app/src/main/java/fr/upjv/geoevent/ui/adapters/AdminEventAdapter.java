@@ -21,12 +21,14 @@ import fr.upjv.geoevent.R;
 import fr.upjv.geoevent.domain.models.Evenement;
 
 /**
- * Adapter RecyclerView pour la liste admin.
- * Le docId Firestore est stocké par événement dans une Map pour éviter
- * toute désynchronisation avec le filtrage/tri.
+ * Adaptateur RecyclerView pour l'affichage et la gestion des événements dans l'interface d'administration.
+ * Supporte le filtrage, le tri dynamique et la liaison sécurisée avec les identifiants de documents Firestore.
  */
 public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.AdminEventViewHolder> {
 
+    /**
+     * Interface de communication pour les actions effectuées sur un événement (édition, suppression).
+     */
     public interface OnEventActionListener {
         void onEdit(Evenement event, String docId);
         void onDelete(Evenement event, String docId);
@@ -35,7 +37,7 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
     private final List<Evenement> fullList     = new ArrayList<>();
     private final List<Evenement> filteredList = new ArrayList<>();
 
-    // Clé = hashCode de l'objet Evenement, Valeur = docId Firestore
+    /** Association entre un objet Evenement et son identifiant unique Firestore (docId) */
     private final Map<Evenement, String> docIdMap = new HashMap<>();
 
     private final OnEventActionListener listener;
@@ -46,8 +48,11 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
     }
 
     /**
-     * Met à jour les données. Les événements et leurs docIds sont associés
-     * via la même liste parallèle fournie par AdminEventsFragment.
+     * Met à jour la source de données de l'adaptateur.
+     * Synchronise la liste des objets métier avec leurs identifiants Firestore respectifs.
+     *
+     * @param events La liste des événements récupérés.
+     * @param docIds La liste correspondante des identifiants de documents.
      */
     public void setData(List<Evenement> events, List<String> docIds) {
         fullList.clear();
@@ -65,6 +70,10 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
         notifyDataSetChanged();
     }
 
+    /**
+     * Filtre la liste des événements en fonction d'une saisie textuelle (titre ou lieu).
+     * @param query La chaîne de caractères de recherche.
+     */
     public void filter(String query) {
         filteredList.clear();
         if (query == null || query.trim().isEmpty()) {
@@ -80,11 +89,17 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
         notifyDataSetChanged();
     }
 
+    /**
+     * Trie la liste courante par nombre décroissant de participants.
+     */
     public void sortByParticipants() {
         filteredList.sort((a, b) -> Integer.compare(b.getNombreParticipant(), a.getNombreParticipant()));
         notifyDataSetChanged();
     }
 
+    /**
+     * Trie la liste courante par ordre alphabétique des titres.
+     */
     public void sortByTitle() {
         filteredList.sort((a, b) -> {
             if (a.getTitre() == null) return 1;
@@ -94,6 +109,9 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
         notifyDataSetChanged();
     }
 
+    /**
+     * Trie la liste courante par date (du plus récent au plus ancien).
+     */
     public void sortByDate() {
         filteredList.sort((a, b) -> {
             if (a.getDateEvenement() == null) return 1;
@@ -133,6 +151,9 @@ public class AdminEventAdapter extends RecyclerView.Adapter<AdminEventAdapter.Ad
     @Override
     public int getItemCount() { return filteredList.size(); }
 
+    /**
+     * Vue mémorisée pour un élément de la liste administrative.
+     */
     static class AdminEventViewHolder extends RecyclerView.ViewHolder {
         TextView title, location, participants, date;
         MaterialButton btnEdit, btnDelete;

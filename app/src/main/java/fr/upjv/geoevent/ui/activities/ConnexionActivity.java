@@ -33,36 +33,40 @@ import fr.upjv.geoevent.domain.repository.UserRepository;
 import fr.upjv.geoevent.services.IAuthService;
 
 /**
- * Écran unique d'authentification.
- *
- * Après connexion réussie, récupère le profil Firestore de l'utilisateur
- * pour connaître son rôle et le rediriger vers :
- *   - AdminActivity  si role == "admin"
- *   - MainActivity   sinon
+ * Activité centrale d'authentification de l'application.
+ * Gère la connexion par email/mot de passe, l'inscription de nouveaux utilisateurs,
+ * l'authentification tierce via Google, et la redirection intelligente basée sur les rôles (Admin/User).
  */
 public class ConnexionActivity extends AppCompatActivity {
 
+    /** Modes d'affichage du formulaire unique */
     private enum AuthMode { LOGIN, REGISTER }
     private AuthMode currentMode = AuthMode.LOGIN;
+
+    // Services et Repositories
     private IAuthService authService;
     private UserRepository userRepository;
 
+    // Composants UI de structure
     private TextView tabLogin, tabRegister;
     private LinearLayout formLogin, formRegister;
     private ProgressBar loadingIndicator;
 
+    // Champs du formulaire de connexion
     private TextInputEditText loginEmailInput, loginPasswordInput;
     private TextInputLayout loginEmailLayout, loginPasswordLayout;
     private TextView loginErrorText;
     private MaterialButton loginButton, loginGoogleButton;
     private TextView forgotPasswordText;
 
+    // Champs du formulaire d'inscription
     private TextInputEditText registerFirstNameInput, registerLastNameInput;
     private TextInputEditText registerEmailInput, registerPasswordInput, registerConfirmPasswordInput;
     private TextInputLayout registerEmailLayout, registerPasswordLayout, registerConfirmPasswordLayout;
     private TextView registerErrorText;
     private MaterialButton registerButton;
 
+    // Gestion Google Sign-In
     private GoogleSignInClient googleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
 
@@ -71,11 +75,13 @@ public class ConnexionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connexion);
 
+        // Initialisation des dépendances via des factories pour le découpage de l'architecture
         authService    = AuthServiceFactory.create();
         userRepository = new UserRepository();
 
         initViews();
 
+        // Vérification de l'état de session existante au lancement
         if (authService.isLoggedIn()) {
             navigateBasedOnRole(authService.getCurrentUser());
             return;
@@ -87,6 +93,9 @@ public class ConnexionActivity extends AppCompatActivity {
         setupGoogleSignIn();
     }
 
+    /**
+     * Liaison des composants graphiques (XML) avec les attributs de la classe.
+     */
     private void initViews() {
         tabLogin    = findViewById(R.id.tabLogin);
         tabRegister = findViewById(R.id.tabRegister);
@@ -115,11 +124,18 @@ public class ConnexionActivity extends AppCompatActivity {
         registerButton                = findViewById(R.id.registerButton);
     }
 
+    /**
+     * Configure le système d'onglets pour basculer entre Connexion et Inscription.
+     */
     private void setupTabSwitcher() {
         tabLogin.setOnClickListener(v -> switchToMode(AuthMode.LOGIN));
         tabRegister.setOnClickListener(v -> switchToMode(AuthMode.REGISTER));
     }
 
+    /**
+     * Gère l'animation visuelle et la visibilité des formulaires lors du changement de mode.
+     * @param mode Le mode cible (LOGIN ou REGISTER).
+     */
     private void switchToMode(AuthMode mode) {
         if (currentMode == mode) return;
         currentMode = mode;
@@ -143,6 +159,9 @@ public class ConnexionActivity extends AppCompatActivity {
         clearAllErrors();
     }
 
+    /**
+     * Initialise les actions liées au formulaire de connexion classique.
+     */
     private void setupLoginForm() {
         loginButton.setOnClickListener(v -> attemptLogin());
         forgotPasswordText.setOnClickListener(v -> {
@@ -156,6 +175,9 @@ public class ConnexionActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configure l'authentification via Google (OAuth2).
+     */
     private void setupGoogleSignIn() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -193,10 +215,14 @@ public class ConnexionActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Valide les saisies et tente une connexion Firebase Auth.
+     */
     private void attemptLogin() {
         clearAllErrors();
         String email    = loginEmailInput.getText() != null ? loginEmailInput.getText().toString().trim() : "";
         String password = loginPasswordInput.getText() != null ? loginPasswordInput.getText().toString() : "";
+
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) { loginEmailLayout.setError("Email invalide"); return; }
         if (password.isEmpty()) { loginPasswordLayout.setError("Mot de passe requis"); return; }
 
@@ -207,17 +233,23 @@ public class ConnexionActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Initialise les actions liées au formulaire d'inscription.
+     */
     private void setupRegisterForm() {
         registerButton.setOnClickListener(v -> attemptRegister());
     }
 
+    /**
+     * Valide les saisies complexes d'inscription et crée le compte dans Firebase Auth et Firestore.
+     */
     private void attemptRegister() {
         clearAllErrors();
         String firstName       = registerFirstNameInput.getText() != null ? registerFirstNameInput.getText().toString().trim() : "";
+        String lastName        = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
         String email           = registerEmailInput.getText() != null ? registerEmailInput.getText().toString().trim() : "";
         String password        = registerPasswordInput.getText() != null ? registerPasswordInput.getText().toString() : "";
         String confirmPassword = registerConfirmPasswordInput.getText() != null ? registerConfirmPasswordInput.getText().toString() : "";
-        String lastName        = registerLastNameInput.getText() != null ? registerLastNameInput.getText().toString().trim() : "";
 
         if (firstName.isEmpty()) { ((TextInputLayout) findViewById(R.id.registerFirstNameLayout)).setError("Requis"); return; }
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) { registerEmailLayout.setError("Email invalide"); return; }
@@ -232,31 +264,35 @@ public class ConnexionActivity extends AppCompatActivity {
     }
 
     /**
-     * Abonne l'utilisateur au topic FCM "all_users" puis route vers l'activité adaptée.
+     * Prépare l'environnement utilisateur après authentification :
+     * 1. Abonne l'appareil au topic global FCM.
+     * 2. Met à jour le jeton FCM de l'appareil dans Firestore pour les notifications ciblées.
+     * 3. Redirige vers l'activité correspondante au rôle.
      */
     private void subscribeAndNavigate(User user) {
+        // Abonnement aux notifications générales
         FirebaseMessaging.getInstance().subscribeToTopic("all_users");
+
+        // Enregistrement du jeton FCM pour les notifications spécifiques (ex: inscrits à un événement)
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
                 String token = task.getResult();
-
-                // On utilise le repository pour mettre à jour l'utilisateur
                 java.util.Map<String, Object> updates = new java.util.HashMap<>();
                 updates.put("fcmToken", token);
 
-                // Mise à jour directe dans Firestore via votre DataService ou Repository
                 fr.upjv.geoevent.domain.data.DataServiceFactory.create()
                         .update("users", user.getUid(), updates);
 
                 android.util.Log.d("ConnexionActivity", "Jeton FCM mis à jour : " + token);
             }
         });
+
         navigateBasedOnRole(user);
     }
 
     /**
-     * Récupère le rôle Firestore de l'utilisateur et redirige vers
-     * AdminActivity (admin) ou MainActivity (user).
+     * Analyse le profil Firestore pour déterminer les droits d'accès.
+     * @param user L'utilisateur authentifié.
      */
     private void navigateBasedOnRole(User user) {
         if (user == null) {
@@ -276,6 +312,7 @@ public class ConnexionActivity extends AppCompatActivity {
                             role = doc.getString("role");
                         }
                     }
+                    // Redirection vers l'interface Admin ou l'interface Client
                     goToActivity(User.ROLE_ADMIN.equals(role) ? AdminActivity.class : MainActivity.class);
                 });
             }
@@ -286,16 +323,20 @@ public class ConnexionActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Navigue vers une activité et nettoie la pile d'activités (Clear Stack).
+     */
     private void goToActivity(Class<?> target) {
         startActivity(new Intent(this, target)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         finish();
     }
 
+    /**
+     * Gère l'état visuel du chargement.
+     */
     private void setLoading(boolean isLoading) {
-        if (loadingIndicator != null) {
-            loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        }
+        if (loadingIndicator != null) loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         if (loginButton != null) loginButton.setEnabled(!isLoading);
         if (loginGoogleButton != null) loginGoogleButton.setEnabled(!isLoading);
         if (registerButton != null) registerButton.setEnabled(!isLoading);
@@ -321,34 +362,17 @@ public class ConnexionActivity extends AppCompatActivity {
         registerErrorText.setVisibility(View.GONE);
     }
 
-
+    /**
+     * Traduit les messages d'erreur techniques de Firebase en messages compréhensibles par l'utilisateur.
+     */
     private String translateFirebaseError(String firebaseMessage) {
-
         if (firebaseMessage == null) return "Une erreur est survenue.";
-        
         String msg = firebaseMessage.toLowerCase();
-        
-        // Gestion du message générique pour identifiants invalides
-        if (msg.contains("credential") || msg.contains("invalid") || msg.contains("expired")) {
-            return "Email ou mot de passe incorrect.";
-        }
-        
-        if (msg.contains("password")) {
-            return "Mot de passe incorrect.";
-        }
-        
-        if (msg.contains("user-not-found") || msg.contains("no user")) {
-            return "Aucun compte trouvé avec cet email.";
-        }
-        
-        if (msg.contains("email-already-in-use") || msg.contains("email_exists")) {
-            return "Cet email est déjà utilisé par un autre compte.";
-        }
-
-        if (msg.contains("network") || msg.contains("connection")) {
-            return "Problème de connexion réseau. Vérifiez votre internet.";
-        }
-        
-        return "Erreur d'authentification : " + firebaseMessage;
+        if (msg.contains("credential") || msg.contains("invalid") || msg.contains("expired")) return "Email ou mot de passe incorrect.";
+        if (msg.contains("password")) return "Mot de passe incorrect.";
+        if (msg.contains("user-not-found") || msg.contains("no user")) return "Aucun compte trouvé avec cet email.";
+        if (msg.contains("email-already-in-use") || msg.contains("email_exists")) return "Cet email est déjà utilisé.";
+        if (msg.contains("network") || msg.contains("connection")) return "Problème de connexion réseau.";
+        return "Erreur : " + firebaseMessage;
     }
 }

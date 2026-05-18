@@ -29,11 +29,9 @@ import fr.upjv.geoevent.services.FcmNotificationService;
 import fr.upjv.geoevent.services.INotificationService;
 
 /**
- * Fragment d'envoi de notifications push.
- *
- * Correction : pour cibler les inscrits d'un événement, on passe le TITRE de l'événement
- * (pas son docId) car la collection "inscriptionevent" est indexée sur "eventTitre".
- * La Cloud Function "sendToEventSubscribers" fait la jointure elle-même.
+ * Fragment permettant aux administrateurs de composer et d'envoyer des notifications push.
+ * Supporte l'envoi global (tous les utilisateurs) ou ciblé (inscrits à un événement spécifique).
+ * S'appuie sur Firebase Cloud Functions pour le routage des messages via FCM.
  */
 public class AdminNotificationsFragment extends Fragment {
 
@@ -48,6 +46,7 @@ public class AdminNotificationsFragment extends Fragment {
     private MaterialButton sendButton;
     private View loadingIndicator;
 
+    /** Liste des événements chargée pour le ciblage spécifique */
     private final List<Evenement> events   = new ArrayList<>();
     private int selectedEventPosition = 0;
 
@@ -75,12 +74,18 @@ public class AdminNotificationsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Gère la visibilité du sélecteur d'événement en fonction du public cible choisi (Tous vs Événement).
+     */
     private void setupTargetToggle() {
         targetRadioGroup.setOnCheckedChangeListener((group, checkedId) ->
                 eventSpinnerContainer.setVisibility(
                         checkedId == R.id.radioSpecificEvent ? View.VISIBLE : View.GONE));
     }
 
+    /**
+     * Charge les événements depuis Firestore pour alimenter le menu déroulant de sélection.
+     */
     private void loadEventsForSpinner() {
         repository.getEvents(new DataCallback() {
             @Override
@@ -115,6 +120,10 @@ public class AdminNotificationsFragment extends Fragment {
         });
     }
 
+    /**
+     * Récupère le contenu saisi et déclenche l'envoi de la notification via le service FCM.
+     * Valide la présence d'un titre et d'un corps de message avant l'envoi.
+     */
     private void sendNotification() {
         String title = notifTitleInput.getText() != null ? notifTitleInput.getText().toString().trim() : "";
         String body  = notifBodyInput.getText()  != null ? notifBodyInput.getText().toString().trim()  : "";
@@ -148,6 +157,7 @@ public class AdminNotificationsFragment extends Fragment {
         int checkedId = targetRadioGroup.getCheckedRadioButtonId();
 
         if (checkedId == R.id.radioAllUsers) {
+            // Envoi à tous les utilisateurs via le topic "all_users"
             notificationService.sendToAllUsers(title, body, callback);
 
         } else if (checkedId == R.id.radioSpecificEvent) {
@@ -156,7 +166,7 @@ public class AdminNotificationsFragment extends Fragment {
                 Toast.makeText(getContext(), "Aucun événement disponible.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // On passe le TITRE — c'est la clé utilisée dans la collection inscriptionevent
+            // Ciblage par titre d'événement (clé de jointure pour les inscriptions)
             String eventTitre = events.get(selectedEventPosition).getTitre();
             if (eventTitre == null || eventTitre.isEmpty()) {
                 setLoading(false);
@@ -167,6 +177,9 @@ public class AdminNotificationsFragment extends Fragment {
         }
     }
 
+    /**
+     * Gère l'état d'activation du bouton et la visibilité de l'indicateur de progression.
+     */
     private void setLoading(boolean isLoading) {
         loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         sendButton.setEnabled(!isLoading);

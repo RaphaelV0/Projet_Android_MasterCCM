@@ -24,11 +24,9 @@ import fr.upjv.geoevent.domain.data.IDataService;
 import fr.upjv.geoevent.ui.activities.MainActivity;
 
 /**
- * Service Firebase Messaging.
- *
- * Deux responsabilités :
- *   1. onNewToken       → sauvegarder le token FCM dans Firestore (collection "users")
- *   2. onMessageReceived → afficher la notification dans le système Android
+ * Service de messagerie Firebase chargé de la réception des notifications push.
+ * Assure également la synchronisation du jeton FCM (Firebase Cloud Messaging) 
+ * avec la base de données Firestore pour permettre l'envoi de notifications ciblées.
  */
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -36,6 +34,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String CHANNEL_ID = "geoevent_channel";
     private static final String CHANNEL_NAME = "GeoEvent Notifications";
 
+    /**
+     * Appelé lors de la génération d'un nouveau jeton de sécurité.
+     * @param token Le nouveau jeton attribué à l'appareil.
+     */
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
@@ -43,6 +45,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         saveTokenToFirestore(token);
     }
 
+    /**
+     * Déclenché à la réception d'un message entrant en arrière-plan ou au premier plan.
+     * Extrait le contenu de la notification et déclenche l'affichage système.
+     */
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
@@ -63,6 +69,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         showNotification(title, body);
     }
 
+    /**
+     * Persiste le jeton FCM dans le profil Firestore de l'utilisateur connecté.
+     */
     private void saveTokenToFirestore(String token) {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) return;
@@ -77,9 +86,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.d(TAG, "Token FCM sauvegardé pour l'utilisateur " + uid);
     }
 
+    /**
+     * Construit et affiche la notification visuelle dans la barre d'état Android.
+     */
     private void showNotification(String title, String body) {
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
+        // Configuration du canal obligatoire pour Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
@@ -91,6 +104,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (manager != null) manager.createNotificationChannel(channel);
         }
 
+        // Intention d'ouverture de l'application lors du clic sur la notification
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
