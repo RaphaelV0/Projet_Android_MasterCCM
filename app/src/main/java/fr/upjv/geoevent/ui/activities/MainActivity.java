@@ -22,12 +22,14 @@ import fr.upjv.geoevent.receivers.BatteryReceiver;
 import fr.upjv.geoevent.receivers.NetworkReceiver;
 
 import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.content.ContextCompat;
 
+/**
+ * Activité principale gérant l'interface utilisateur après connexion.
+ * Orchestre la navigation entre les différents fragments de l'application (Carte, Liste, Profil)
+ * via un contrôleur de navigation et une barre de navigation inférieure.
+ */
 public class MainActivity extends AppCompatActivity {
 
     // Déclarations
@@ -41,23 +43,30 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 1. Récupérer les vues
         MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
 
-        // On dit à Android que notre Toolbar sert de barre d'action principale
         setSupportActionBar(topAppBar);
 
-        // 2. Récupérer le NavController (Le chef d'orchestre des fragments)
+        /**
+         * Initialisation du NavController.
+         * Composant central du Jetpack Navigation gérant les transitions entre les fragments
+         * déclarés dans le graphe de navigation.
+         */
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
 
-        // 3. Configurer la barre du bas pour qu'elle change les fragments
+        /**
+         * Synchronisation de la barre de navigation inférieure avec le contrôleur.
+         * Permet de basculer automatiquement entre les écrans principaux.
+         */
         NavigationUI.setupWithNavController(bottomNav, navController);
 
-        // 4. Configurer la barre du haut (pour afficher la flèche retour quand il faut)
-        // On définit les "écrans racines" (ceux qui n'ont pas de flèche retour)
+        /**
+         * Configuration de la barre d'outils supérieure.
+         * Gère l'affichage du titre et de la flèche de retour en fonction de la destination courante.
+         */
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_map, R.id.navigation_list, R.id.navigation_profile)
                 .build();
@@ -136,7 +145,10 @@ public class MainActivity extends AppCompatActivity {
 //        });
     }
 
-    // Permet à la flèche retour en haut à gauche de fonctionner
+    /**
+     * Gère l'événement de navigation vers le haut (bouton retour dans la barre d'outils).
+     * @return true si la navigation a été gérée par le NavController.
+     */
     @Override
     public boolean onSupportNavigateUp() {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()

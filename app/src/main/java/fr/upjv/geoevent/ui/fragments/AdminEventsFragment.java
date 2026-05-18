@@ -41,13 +41,9 @@ import fr.upjv.geoevent.domain.repository.EvenementRepository;
 import fr.upjv.geoevent.ui.adapters.AdminEventAdapter;
 
 /**
- * Fragment de gestion des événements pour l'administrateur.
- *
- * Corrections appliquées :
- * - Le docId est transmis directement au callback onEdit/onDelete via la Map interne
- *   de l'adapter → plus de désynchronisation avec filtrage/tri.
- * - La mise à jour utilise un Map<String, Object> avec uniquement les champs modifiés
- *   → la description est désormais correctement sauvegardée dans Firestore.
+ * Fragment dédié à la gestion administrative des événements.
+ * Permet aux administrateurs de visualiser, filtrer, trier, créer, modifier et supprimer des événements.
+ * Communique directement avec Firestore via le repository dédié.
  */
 public class AdminEventsFragment extends Fragment implements AdminEventAdapter.OnEventActionListener {
 
@@ -59,6 +55,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
     private TextView emptyStateText;
     private RecyclerView recyclerView;
 
+    // Gestion de la date et de l'heure pour la création/édition
     private int editYear, editMonth, editDay, editHour, editMinute;
     private boolean editDateSelected = false;
     private TextView editDateDisplay;
@@ -75,6 +72,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         emptyStateText = view.findViewById(R.id.adminEmptyState);
         recyclerView = view.findViewById(R.id.adminEventsRecycler);
 
+        // Configuration de la liste (RecyclerView)
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new AdminEventAdapter(this);
         recyclerView.setAdapter(adapter);
@@ -82,6 +80,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         setupSearch();
         setupSort();
 
+        // Bouton flottant pour l'ajout d'un nouvel événement
         FloatingActionButton fabAdd = view.findViewById(R.id.fabAdminAddEvent);
         fabAdd.setOnClickListener(v -> showEventDialog(null, null));
 
@@ -89,6 +88,9 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         return view;
     }
 
+    /**
+     * Charge la liste des événements depuis le repository et met à jour l'adaptateur.
+     */
     private void loadEvents() {
         repository.getEvents(new DataCallback() {
             @Override
@@ -99,6 +101,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                         QuerySnapshot qs = (QuerySnapshot) data;
                         List<Evenement> events = qs.toObjects(Evenement.class);
                         List<String> docIds = new ArrayList<>();
+                        // Récupération des IDs de documents pour les opérations de mise à jour/suppression
                         for (com.google.firebase.firestore.DocumentSnapshot doc : qs.getDocuments()) {
                             docIds.add(doc.getId());
                         }
@@ -111,12 +114,15 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
             public void onError(Exception e) {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "Erreur : " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            Toast.makeText(getContext(), "Erreur de chargement : " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 }
             }
         });
     }
 
+    /**
+     * Configure la barre de recherche avec un filtrage en temps réel.
+     */
     private void setupSearch() {
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -129,6 +135,9 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         });
     }
 
+    /**
+     * Configure le spinner de tri (Date, Titre, Participants).
+     */
     private void setupSort() {
         String[] options = {"Trier par : Date (récent)", "Titre (A→Z)", "Plus d'inscrits"};
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(requireContext(),
@@ -148,17 +157,27 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         });
     }
 
+    /**
+     * Gère l'affichage d'un message si la liste est vide.
+     */
     private void updateEmptyState() {
         emptyStateText.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 
-    // ===== Callbacks de l'adapter — docId transmis directement =====
+    //region Implémentation de AdminEventAdapter.OnEventActionListener
 
+    /**
+     * Callback déclenché lors du clic sur le bouton de modification d'un événement.
+     */
     @Override
     public void onEdit(Evenement event, String docId) {
         showEventDialog(event, docId);
     }
 
+    /**
+     * Callback déclenché lors du clic sur le bouton de suppression.
+     * Affiche une boîte de confirmation avant de procéder à la suppression dans Firestore.
+     */
     @Override
     public void onDelete(Evenement event, String docId) {
         new AlertDialog.Builder(requireContext())
@@ -166,15 +185,21 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                 .setMessage("Voulez-vous vraiment supprimer « " + event.getTitre() + " » ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
                     repository.deleteEvent(docId);
-                    loadEvents(); // Rechargement complet pour rester en sync
+                    loadEvents(); // Rafraîchissement de la liste
                     Toast.makeText(getContext(), "Événement supprimé", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
     }
+    //endregion
 
-    // ===== Dialogue de création / modification =====
-
+    /**
+     * Affiche une boîte de dialogue personnalisée pour la création ou la modification d'un événement.
+     * Gère la saisie des informations de base ainsi que la sélection de la date et de l'heure.
+     *
+     * @param event L'événement à modifier (null pour une création).
+     * @param docId L'ID du document Firestore (null pour une création).
+     */
     private void showEventDialog(@Nullable Evenement event, @Nullable String docId) {
         boolean isEdit = event != null;
         editDateSelected = false;
@@ -187,6 +212,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         TextInputEditText editLieu        = dialogView.findViewById(R.id.dialogEventLieu);
         editDateDisplay                   = dialogView.findViewById(R.id.dialogEventDate);
 
+        // Pré-remplissage en mode édition
         if (isEdit) {
             editTitle.setText(event.getTitre());
             editDescription.setText(event.getDescription());
@@ -220,9 +246,7 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                     }
 
                     if (isEdit) {
-                        // ✅ FIX description : on utilise un Map plutôt que le POJO complet.
-                        // SetOptions.merge() + POJO peut ignorer les champs selon la sérialisation
-                        // Firestore. Avec un Map explicite, chaque champ est garanti d'être envoyé.
+                        // Mise à jour partielle via une Map pour garantir la persistance de tous les champs
                         Map<String, Object> patch = new HashMap<>();
                         patch.put("titre", titre);
                         patch.put("description", desc);
@@ -248,13 +272,16 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
                         Toast.makeText(getContext(), "Événement créé", Toast.LENGTH_SHORT).show();
                     }
 
-                    loadEvents(); // Rafraîchissement systématique après toute modification
+                    loadEvents(); // Rechargement automatique de la liste
                 })
                 .setNegativeButton("Annuler", null)
                 .create()
                 .show();
     }
 
+    /**
+     * Affiche les sélecteurs de date et d'heure système successivement.
+     */
     private void showEditDatePicker() {
         Calendar now = Calendar.getInstance();
         new DatePickerDialog(requireContext(), (view, year, month, day) -> {
@@ -267,6 +294,9 @@ public class AdminEventsFragment extends Fragment implements AdminEventAdapter.O
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    /**
+     * Met à jour le champ texte affichant la date et l'heure sélectionnées dans le dialogue.
+     */
     private void updateEditDateDisplay() {
         if (editDateDisplay != null) {
             editDateDisplay.setText(String.format(Locale.FRANCE,

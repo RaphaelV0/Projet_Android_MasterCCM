@@ -14,26 +14,38 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Implémentation FCM V1 via appel HTTP direct aux Cloud Functions Firebase.
- * On évite le SDK Firebase callable (qui impose App Check) au profit d'un
- * simple POST JSON — plus simple, plus prévisible.
- *
- * Les URLs sont celles des fonctions déployées sur us-central1.
- * Remplacer "ccmandroidgp2026" si le project_id change.
+ * Implémentation du service de notification utilisant Firebase Cloud Messaging (FCM V1).
+ * Cette classe gère l'envoi de messages via des appels HTTP vers des Cloud Functions Firebase
+ * et assure la gestion des abonnements aux thématiques (topics) côté client.
+ * 
+ * L'architecture privilégie des appels REST directs pour s'affranchir des contraintes
+ * spécifiques au SDK Firebase Callable.
  */
 public class FcmNotificationService implements INotificationService {
 
     private static final String TAG     = "FcmNotificationService";
     private static final String API_KEY = "geoevent-admin-2026";
 
+    /** URL de base des Firebase Cloud Functions déployées */
     private static final String BASE_URL =
             "https://us-central1-ccmandroidgp2026.cloudfunctions.net/";
 
+    /** Identifiant du canal de diffusion global */
     private static final String TOPIC_ALL = "all_users";
 
+    /** Exécuteur pour les tâches réseau en arrière-plan */
     private final ExecutorService executor   = Executors.newSingleThreadExecutor();
+    
+    /** Handler pour retourner les résultats sur le thread UI principal */
     private final Handler         mainHandler = new Handler(Looper.getMainLooper());
 
+    /**
+     * Envoie une notification push à l'ensemble des utilisateurs abonnés au canal global.
+     * 
+     * @param title Le titre de la notification.
+     * @param body Le corps du message.
+     * @param callback Interface de retour pour le suivi de l'opération.
+     */
     @Override
     public void sendToAllUsers(String title, String body, NotificationCallback callback) {
         JSONObject payload = new JSONObject();
@@ -49,6 +61,14 @@ public class FcmNotificationService implements INotificationService {
         postJson(BASE_URL + "sendToTopic", payload, callback);
     }
 
+    /**
+     * Envoie une notification push ciblée aux participants d'un événement spécifique.
+     * 
+     * @param eventTitre Le titre de l'événement servant de clé de routage.
+     * @param title Le titre de la notification.
+     * @param body Le corps du message.
+     * @param callback Interface de retour pour le suivi de l'opération.
+     */
     @Override
     public void sendToEventSubscribers(String eventTitre, String title, String body,
                                        NotificationCallback callback) {
@@ -66,8 +86,11 @@ public class FcmNotificationService implements INotificationService {
     }
 
     /**
-     * Exécute un POST JSON dans un thread background et retourne le résultat
-     * sur le thread principal via le callback.
+     * Réalise une requête HTTP POST asynchrone pour transmettre le payload JSON aux Cloud Functions.
+     * 
+     * @param endpoint L'URL complète de la fonction cible.
+     * @param payload L'objet JSON contenant les données de la notification.
+     * @param callback Interface de retour pour notifier la réussite ou l'échec sur le thread UI.
      */
     private void postJson(String endpoint, JSONObject payload,
                           NotificationCallback callback) {
@@ -106,8 +129,9 @@ public class FcmNotificationService implements INotificationService {
         });
     }
 
-    // ===== Abonnements locaux (côté client, pas besoin de Cloud Functions) =====
-
+    /**
+     * Enregistre l'appareil courant auprès du topic global pour recevoir les annonces générales.
+     */
     @Override
     public void subscribeCurrentUserToAllUsers() {
         com.google.firebase.messaging.FirebaseMessaging.getInstance()
@@ -116,6 +140,11 @@ public class FcmNotificationService implements INotificationService {
                 .addOnFailureListener(e -> Log.e(TAG, "Erreur abonnement all_users", e));
     }
 
+    /**
+     * Abonne l'utilisateur aux notifications spécifiques liées à un événement.
+     * 
+     * @param eventId L'identifiant (ou titre) de l'événement cible.
+     */
     @Override
     public void subscribeCurrentUserToEvent(String eventId) {
         String topic = "event_" + eventId;
@@ -125,6 +154,11 @@ public class FcmNotificationService implements INotificationService {
                 .addOnFailureListener(e -> Log.e(TAG, "Erreur abonnement " + topic, e));
     }
 
+    /**
+     * Supprime l'abonnement aux notifications liées à un événement spécifique.
+     * 
+     * @param eventId L'identifiant (ou titre) de l'événement concerné.
+     */
     @Override
     public void unsubscribeCurrentUserFromEvent(String eventId) {
         String topic = "event_" + eventId;
