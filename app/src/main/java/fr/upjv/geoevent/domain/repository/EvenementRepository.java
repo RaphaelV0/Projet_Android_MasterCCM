@@ -68,4 +68,5 @@ public class EvenementRepository {
     public void createEvent(Evenement event) { dataService.create(COLLECTION, event); }
     public void updateEvent(String id, Evenement event) { dataService.update(COLLECTION, id, event); }
     public void deleteEvent(String id) { dataService.delete(COLLECTION, id); }
+
 }

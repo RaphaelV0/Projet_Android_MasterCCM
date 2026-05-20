@@ -178,7 +178,7 @@ public class MapFragment extends Fragment {
         bottomSheet.bringToFront();
         bottomSheet.setElevation(50f);
 
-        // ✅ Ouvrir le bottom sheet
+        //  Ouvrir le bottom sheet
         bottomSheetBehavior.setState(
                 com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED);
     }
@@ -224,7 +224,7 @@ public class MapFragment extends Fragment {
     private void effacerItineraire() {
         mapService.clearRoute();
         btnClearRoute.setVisibility(View.GONE);
-        // ✅ Fermer le bottom sheet
+        //  Fermer le bottom sheet
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
     }
 

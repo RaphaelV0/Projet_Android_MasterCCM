@@ -9,6 +9,7 @@ public interface IDataService {
     void delete(String collection, String id);
 
     void getById(String collection, String id, DataCallback callback);
+    void getByName(String collection, String name, DataCallback callback);
 
     void getAll(String collection, DataCallback callback);
 }

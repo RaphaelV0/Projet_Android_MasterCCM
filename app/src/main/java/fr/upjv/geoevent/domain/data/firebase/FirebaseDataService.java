@@ -45,10 +45,32 @@ public class FirebaseDataService implements IDataService {
     }
 
     @Override
+    public void getByName(String collection, String name, DataCallback callback) {
+        db.collection(collection)
+                .document(name)
+                .get()
+                .addOnSuccessListener(callback::onSuccess)
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void getInscriptionsByUser(String collection, String uid, DataCallback callback) {
+        db.collection(collection)
+                .whereEqualTo("uid", uid)  // filtre sur le champ uid
+                .get()
+                .addOnSuccessListener(callback::onSuccess)
+                .addOnFailureListener(callback::onError);
+    }
+
+
+    @Override
     public void getAll(String collection, DataCallback callback) {
         db.collection(collection)
                 .get()
                 .addOnSuccessListener(callback::onSuccess)
                 .addOnFailureListener(callback::onError);
     }
+
+
+
+
 }
